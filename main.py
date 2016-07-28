@@ -23,7 +23,7 @@ convert.merge_classes(train.target_names,
                         'objective-OR-neutral'],
                        'neutral')
 # Build the target array
-target = convert.strings_to_integers(train.target_names)
+target, labels = convert.strings_to_integers(train.target_names)
 train.target.extend(target)
 
 test = convert.read_dataset(data.semeval16_polarity_test)
@@ -34,7 +34,7 @@ convert.merge_classes(test.target_names,
                         'objective-OR-neutral'],
                        'neutral')
 # Build the target array
-target = convert.strings_to_integers(test.target_names)
+target, labels = convert.strings_to_integers(test.target_names)
 test.target.extend(target)
 
 text_pipeline = Pipeline([('vect', CountVectorizer()),
@@ -47,7 +47,7 @@ text_pipeline = Pipeline([('vect', CountVectorizer()),
 text_clf = text_pipeline.fit(train.data, train.target)
 predicted = text_clf.predict(test.data)
 print(metrics.classification_report(test.target, predicted,
-                                    target_names=list(set(test.target_names))))
+                                    target_names=labels))
 
 ## DEPRECATED
 

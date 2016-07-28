@@ -95,11 +95,11 @@ def strings_to_integers(strings):
     Returns:
         An array of integers
     """
-    uniq_strings = list(set(strings))
+    labels = list(set(strings))
     integers = []
     for string in strings:
-        integers.append(uniq_strings.index(string))
-    return integers
+        integers.append(labels.index(string))
+    return integers, labels
 
 
 def merge_classes(lst, classes, new_class):
