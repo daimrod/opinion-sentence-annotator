@@ -100,3 +100,20 @@ def strings_to_integers(strings):
     for string in strings:
         integers.append(uniq_strings.index(string))
     return integers
+
+
+def merge_classes(lst, classes, new_class):
+    """Merge classes from lst into one new_class.
+
+    Args:
+        lst: A list of classes that will be replaced (strings).
+        classes: A list of classes to replace (strings).
+        new_class: The new class (string).
+
+    Returns:
+        The list with all occurences of classes replaced by new_class.
+    """
+    for i in range(len(lst)):
+        if lst[i] in classes:
+            lst[i] = new_class
+    return lst
