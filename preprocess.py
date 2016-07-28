@@ -35,18 +35,22 @@ def nltktokenizer(s):
     return ' '.join(tok.tokenize(s))
 
 
+def ident(*args):
+    return args
+
+
 class Tokenizer(BaseEstimator, TransformerMixin):
     """Tokenize.
 
     """
     def __init__(self, tokenizer=None):
         if tokenizer is None:
-            self.tok = lambda s: s
+            self.tok = ident
         else:
             self.tok = tokenizer
 
     def fit(self, x, y=None):
         return self
 
-    def transform(self, strings):
-        return [self.tok(s) for s in strings]
+    def transform(self, arg):
+        return arg
