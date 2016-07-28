@@ -39,16 +39,20 @@ test.target.extend(target)
 
 parameters = {'vect__ngram_range': [(1, 1), (1, 2), (1, 3)],
               'tfidf__use_idf': [True, False],
-              'clf__alpha': [1e-2, 1e-3, 1e-4, 1e-5],
-              'clf__n_iter': [1, 2, 5, 10],
-              'clf__loss': ['hinge', 'log', 'perceptron'],
+              'clf__alpha': [1e-3, 1e-4, 1e-5],
+              'clf__n_iter': [1, 2, 5],
+              'clf__loss': ['hinge'],
 }
 pipeline = Pipeline([('vect', CountVectorizer()),
                      ('tfidf', TfidfTransformer()),
-                     ('clf', SGDClassifier(loss='hinge')),
+                     ('clf', SGDClassifier(loss='hinge', random_state=42)),
 ])
 
-gs_clf = GridSearchCV(pipeline, parameters, n_jobs=6)
+scorer = metrics.make_scorer(metrics.f1_score, average='micro')
+# scorer = metrics.make_scorer(metrics.accuracy_score)
+# scorer = 'accuracy'
+gs_clf = GridSearchCV(pipeline, parameters, n_jobs=6,
+                      scoring=scorer, verbose=1)
 gs_clf = gs_clf.fit(train.data, train.target)
 for param in gs_clf.best_params_:
     print('%s: %r' % (param, gs_clf.best_params_[param]))
