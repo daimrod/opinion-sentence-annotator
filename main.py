@@ -7,6 +7,8 @@ import convert
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import SGDClassifier
+from sklearn import metrics
 from sklearn.pipeline import Pipeline
 import numpy as np
 
@@ -14,36 +16,38 @@ logger = logging.getLogger(__name__)
 
 
 train = convert.read_dataset(data.semeval16_polarity_train)
-
 # Convert objective and neutral to objective/neutral
-for i in range(len(train.target_names)):
-    if train.target_names[i] in ['objective',
-                                 'neutral',
-                                 'objective-OR-neutral']:
-        train.target_names[i] = 'objective/neutral'
+convert.merge_classes(train.target_names,
+                       ['objective',
+                        'neutral',
+                        'objective-OR-neutral'],
+                       'neutral')
 # Build the target array
 target = convert.strings_to_integers(train.target_names)
 train.target.extend(target)
 
 test = convert.read_dataset(data.semeval16_polarity_test)
 # Convert objective and neutral to objective/neutral
-for i in range(len(test.target_names)):
-    if test.target_names[i] in ['objective',
-                                'neutral',
-                                'objective-OR-neutral']:
-        test.target_names[i] = 'objective/neutral'
+convert.merge_classes(test.target_names,
+                       ['objective',
+                        'neutral',
+                        'objective-OR-neutral'],
+                       'neutral')
 # Build the target array
 target = convert.strings_to_integers(test.target_names)
 test.target.extend(target)
 
 text_pipeline = Pipeline([('vect', CountVectorizer()),
                           ('tfidf', TfidfTransformer()),
-                          ('clf', MultinomialNB()),
+                          ('clf', SGDClassifier(loss='hinge',
+                                                n_iter=5,
+                                                random_state=42)),
 ])
 
 text_clf = text_pipeline.fit(train.data, train.target)
 predicted = text_clf.predict(test.data)
-print(np.mean(predicted == test.target))
+print(metrics.classification_report(test.target, predicted,
+                                    target_names=list(set(test.target_names))))
 
 ## DEPRECATED
 
