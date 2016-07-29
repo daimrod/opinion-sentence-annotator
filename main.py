@@ -5,6 +5,7 @@ import logging
 
 import codecs
 from collections import namedtuple
+from subprocess import Popen, PIPE
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -41,6 +42,8 @@ semeval16_polarity_train = os.path.join(semeval16,
 semeval16_polarity_test = os.path.join(semeval16,
                                        'Task4',
                                        '100_topics_100_tweets.sentence-three-point.subtask-A.devtest.gold.txt')
+
+SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 
 ########## Data Reader
 Dataset = namedtuple('Dataset', ['data',
@@ -104,7 +107,7 @@ def read_dataset(ipath, separator='\t',
                     dataset.sid.append(sid)
                     dataset.uid.append(uid)
                     dataset.target_names.append(polarity.replace('"', ''))
-                    dataset.data.append(text)
+                    dataset.data.append({'text': text})
                 except ValueError:
                     try:
                         [uid, polarity, text] = line.split(separator,
@@ -113,7 +116,7 @@ def read_dataset(ipath, separator='\t',
                             continue
                         dataset.uid.append(uid)
                         dataset.target_names.append(polarity.replace('"', ''))
-                        dataset.data.append(text)
+                        dataset.data.append({'text': text})
                     except ValueError:
                         logging.warn('Couldn\'t parse line %s', line)
     return dataset
@@ -189,15 +192,19 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
     def transform(self, X, **params):
         ret = []
         for x in X:
+            d = {}
             for (f_name, f) in self.features:
-                d = {}
-                d[f_name] = f(x)
-                ret.append(d)
+                extracted = f(x)
+                if type(extracted) is dict:
+                    d.update(extracted)
+                else:
+                    d[f_name] = extracted
+            ret.append(d)
         return ret
 
 
 ##### Caps
-def all_caps(s):
+def f_all_caps(s):
     """Return the number of words with all characters in upper case.
 
     This function assumes that the string is tokenized and all words
@@ -214,6 +221,88 @@ def all_caps(s):
         if word.upper() == word:
             n = n + 1
     return n
+
+
+def f_senna(s):
+    """Return the string parsed with senna.
+
+    Args:
+        s: A string to parse.
+
+    Returns:
+        A dictionnary with POS, CHK and NER annotations for each word.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {'POS': [], 'CHK': [], 'NER': []}
+    p = Popen(['./senna', '-notokentags',
+               '-usrtokens',
+               '-pos', '-chk', '-ner'],
+              stdin=PIPE,
+              stdout=PIPE,
+              stderr=PIPE, cwd=SENNA_PATH)
+    out, err = p.communicate(input=s.encode())
+    if p.returncode != 0:
+        print(err.replace('*', '#'))
+    out = out.decode()
+
+    for line in out.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        tags = line.split('\t')
+        tags = [x.strip() for x in tags]
+        pos, chk, ner = tags
+        ret['POS'].append(pos)
+        ret['CHK'].append(chk)
+        ret['NER'].append(ner)
+    return ret
+
+
+def f_senna_multilines(s):
+    """Return the string parsed with senna.
+
+    Args:
+        s: A string to parse.
+
+    Returns:
+        A list of dictionnaries with POS, CHK and NER annotations for
+        each word.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = []
+    p = Popen(['./senna', '-notokentags',
+               '-usrtokens',
+               '-pos', '-chk', '-ner'],
+              stdin=PIPE,
+              stdout=PIPE,
+              stderr=PIPE, cwd=SENNA_PATH)
+    out, err = p.communicate(input=s.encode())
+    if p.returncode != 0:
+        print(err.replace('*', '#'))
+    out = out.decode()
+
+    d = {'POS': [], 'CHK': [], 'NER': []}
+    new_line = True
+    for line in out.split('\n'):
+        line = line.strip()
+        if not line:
+            if not new_line:
+                ret.append(d)
+                d = {'POS': [], 'CHK': [], 'NER': []}
+            new_line = True
+            continue
+        tags = line.split('\t')
+        tags = [x.strip() for x in tags]
+        pos, chk, ner = tags
+        d['POS'].append(pos)
+        d['CHK'].append(chk)
+        d['NER'].append(ner)
+        new_line = False
+    return ret
 
 
 ##### Tokenizer
@@ -251,7 +340,8 @@ def identity(*args):
 
 class Tokenizer(BaseEstimator, TransformerMixin):
     """Tokenize with the given tokenizer."""
-    def __init__(self, tokenizer=None):
+    def __init__(self, item=None, tokenizer=None):
+        self.item = item
         self.tokenizer = tokenizer
         self._update_params()
 
@@ -263,15 +353,43 @@ class Tokenizer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, *params):
-        return [self.tokenizer(x) for x in X]
+        if self.item is None:
+            return [self.tokenizer(x) for x in X]
+        else:
+            for x in X:
+                x[self.item] = self.tokenizer(x[self.item])
+        return X
 
     def get_params(self, deep=True):
-        return {'tokenizer': self.tokenizer}
+        return {'item': self.item,
+                'tokenizer': self.tokenizer}
 
     def set_params(self, **params):
         for p in params:
             setattr(self, p, params[p])
         self._update_params()
+
+
+class Filter(BaseEstimator, TransformerMixin):
+    """Filter input based."""
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+
+    def fit(self, X, y=None, *params):
+        return self
+
+    def transform(self, X, *params):
+        if self.enabled:
+            return X
+        else:
+            return [[0] for x in X]
+
+    def get_params(self, deep=True):
+        return {'enabled': self.enabled}
+
+    def set_params(self, **params):
+        for p in params:
+            setattr(self, p, params[p])
 
 
 ########## Pipeline
@@ -306,8 +424,8 @@ def run(truncate=None):
     # }
 
     parameters = {'tok__tokenizer': [None, happyfuntokenizer, nltktokenizer],
-                  'features__ngram__vect__ngram_range': [(1, 3)],
 
+                  'features__ngram__vect__ngram_range': [(1, 3)],
                   'features__ngram__tfidf__use_idf': [True],
 
                   'clf__alpha': [1e-4],
@@ -316,15 +434,12 @@ def run(truncate=None):
                   }
 
     pipeline = Pipeline([
-        ('tok', Tokenizer()),
-        ('extractor', ExtractFeatures([
-            ('text', identity)
-        ])),
+        ('tok', Tokenizer('text')),
         ('features', FeatureUnion([
             ('ngram', Pipeline([
                 ('extract', ItemExtractor('text')),
                 ('vect', CountVectorizer()),
-                ('tfidf', TfidfTransformer())
+                ('tfidf', TfidfTransformer()),
             ])),
         ])),
         ('clf', SGDClassifier(loss='hinge', random_state=42)),
