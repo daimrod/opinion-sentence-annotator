@@ -338,6 +338,10 @@ def identity(*args):
     return args
 
 
+def dummy(*args):
+    return 'dummy'
+
+
 class Tokenizer(BaseEstimator, TransformerMixin):
     """Tokenize with the given tokenizer."""
     def __init__(self, item=None, tokenizer=None):
@@ -356,9 +360,12 @@ class Tokenizer(BaseEstimator, TransformerMixin):
         if self.item is None:
             return [self.tokenizer(x) for x in X]
         else:
+            new_X = []
             for x in X:
-                x[self.item] = self.tokenizer(x[self.item])
-        return X
+                new_x = dict(x)
+                new_x[self.item] = self.tokenizer(x[self.item])
+                new_X.append(new_x)
+        return new_X
 
     def get_params(self, deep=True):
         return {'item': self.item,
