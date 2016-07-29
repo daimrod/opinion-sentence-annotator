@@ -6,13 +6,14 @@ import logging
 import codecs
 from collections import namedtuple
 
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion
 from sklearn.grid_search import GridSearchCV
+from sklearn.grid_search import ParameterGrid
 from sklearn.base import BaseEstimator, TransformerMixin
 
 import happyfuntokenizing
@@ -156,7 +157,7 @@ def merge_classes(lst, classes, new_class):
 
 ########## Features Extractions
 ##### Utils
-class ItemExtractor(TransformerMixin):
+class ItemExtractor(BaseEstimator, TransformerMixin):
     """Extract a particular entry in the input dictionnary.
 
     Attributes:
@@ -170,6 +171,29 @@ class ItemExtractor(TransformerMixin):
 
     def transform(self, X, **params):
         return [x[self.item] for x in X]
+
+
+class ExtractFeatures(BaseEstimator, TransformerMixin):
+    """Extract main features.
+
+    Attributes:
+        features: A dictionnary with features to extract of the form
+        {feature_name: extractor} where extractor is a function.
+    """
+    def __init__(self, features):
+        self.features = features
+
+    def fit(self, X, y=None, **params):
+        return self
+
+    def transform(self, X, **params):
+        ret = []
+        for x in X:
+            for (f_name, f) in self.features:
+                d = {}
+                d[f_name] = f(x)
+                ret.append(d)
+        return ret
 
 
 ##### Caps
@@ -219,29 +243,39 @@ def nltktokenizer(s):
     return ' '.join(tok.tokenize(s))
 
 
-def ident(*args):
+def identity(*args):
+    if len(args) == 1:
+        return args[0]
     return args
 
 
 class Tokenizer(BaseEstimator, TransformerMixin):
-    """Tokenize.
-
-    """
+    """Tokenize with the given tokenizer."""
     def __init__(self, tokenizer=None):
-        if tokenizer is None:
-            self.tok = ident
-        else:
-            self.tok = tokenizer
+        self.tokenizer = tokenizer
+        self._update_params()
 
-    def fit(self, X, y=None):
+    def _update_params(self):
+        if self.tokenizer is None:
+            self.tokenizer = identity
+
+    def fit(self, X, y=None, *params):
         return self
 
-    def transform(self, arg):
-        return arg
+    def transform(self, X, *params):
+        return [self.tokenizer(x) for x in X]
+
+    def get_params(self, deep=True):
+        return {'tokenizer': self.tokenizer}
+
+    def set_params(self, **params):
+        for p in params:
+            setattr(self, p, params[p])
+        self._update_params()
 
 
 ########## Pipeline
-def run():
+def run(truncate=None):
     train = read_dataset(semeval16_polarity_train)
     # Convert objective and neutral to objective/neutral
     merge_classes(train.target_names,
@@ -272,29 +306,37 @@ def run():
     # }
 
     parameters = {'tok__tokenizer': [None, happyfuntokenizer, nltktokenizer],
+                  'features__ngram__vect__ngram_range': [(1, 3)],
 
-                  'vect__ngram_range': [(1, 3)],
-
-                  'tfidf__use_idf': [True],
+                  'features__ngram__tfidf__use_idf': [True],
 
                   'clf__alpha': [1e-4],
                   'clf__n_iter': [5],
                   'clf__loss': ['hinge'],
                   }
 
-    pipeline = Pipeline([('tok', Tokenizer()),
-                         ('vect', CountVectorizer()),
-                         ('tfidf', TfidfTransformer()),
-                         ('clf', SGDClassifier(loss='hinge', random_state=42)),
-                         ])
+    pipeline = Pipeline([
+        ('tok', Tokenizer()),
+        ('extractor', ExtractFeatures([
+            ('text', identity)
+        ])),
+        ('features', FeatureUnion([
+            ('ngram', Pipeline([
+                ('extract', ItemExtractor('text')),
+                ('vect', CountVectorizer()),
+                ('tfidf', TfidfTransformer())
+            ])),
+        ])),
+        ('clf', SGDClassifier(loss='hinge', random_state=42)),
+    ])
 
     scorer = metrics.make_scorer(metrics.f1_score,
                                  average='micro')
     scorer = metrics.make_scorer(metrics.accuracy_score)
     scorer = 'accuracy'
-    clf = GridSearchCV(pipeline, parameters, n_jobs=6,
+    clf = GridSearchCV(pipeline, parameters, n_jobs=1,
                        scoring=scorer, verbose=1)
-    clf = clf.fit(train.data, train.target)
+    clf = clf.fit(train.data[:truncate], train.target[:truncate])
     for param in clf.best_params_:
         print('%s: %r' % (param, clf.best_params_[param]))
 
