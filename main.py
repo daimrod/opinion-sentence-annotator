@@ -842,8 +842,76 @@ def f_senna_multi(lst):
         d['POS'].append(pos)
         d['CHK'].append(chk)
         d['NER'].append(ner)
-        new_line = False
     return ret
+
+
+class MapTransformer(BaseEstimator, TransformerMixin):
+    """Apply function.
+    """
+    def __init__(self, item=None, fun=None):
+        self.item = item
+        self.fun = fun
+
+    def fit(self, X, y=None, *params):
+        return self
+
+    def transform(self, X, *params):
+        if self.item is None:
+            return [self.fun(x) for x in X]
+        else:
+            new_X = []
+            for x in X:
+                new_x = dict(x)
+                ret = self.fun(x[self.item])
+                if type(ret) is dict:
+                    new_x.update(ret)
+                else:
+                    new_x[self.item] = ret
+                new_X.append(new_x)
+        return new_X
+
+    def get_params(self, deep=True):
+        return {'item': self.item,
+                'fun': self.fun}
+
+    def set_params(self, **params):
+        for p in params:
+            setattr(self, p, params[p])
+
+
+class FunctionTransformer(BaseEstimator, TransformerMixin):
+    """Apply function.
+    """
+    def __init__(self, item=None, fun=None):
+        self.item = item
+        self.fun = fun
+
+    def fit(self, X, y=None, *params):
+        return self
+
+    def transform(self, X, *params):
+        if self.item is None:
+            ret = self.fun(X)
+        else:
+            new_X = self.fun([x[self.item] for x in X])
+            ret = []
+            for new_x in new_X:
+                if type(new_x) is dict:
+                    for x in X:
+                        new_x.update(x)
+                        ret.append(new_x)
+                else:
+                    ret.append(new_x)
+        print(ret)
+        return ret
+
+    def get_params(self, deep=True):
+        return {'item': self.item,
+                'fun': self.fun}
+
+    def set_params(self, **params):
+        for p in params:
+            setattr(self, p, params[p])
 
 
 ##### Tokenizer
@@ -883,39 +951,39 @@ def dummy(*args):
     return 'dummy'
 
 
-class Tokenizer(BaseEstimator, TransformerMixin):
-    """Tokenize with the given tokenizer."""
-    def __init__(self, item=None, tokenizer=None):
-        self.item = item
-        self.tokenizer = tokenizer
-        self._update_params()
+# class Tokenizer(BaseEstimator, TransformerMixin):
+#     """Tokenize with the given tokenizer."""
+#     def __init__(self, item=None, tokenizer=None):
+#         self.item = item
+#         self.tokenizer = tokenizer
+#         self._update_params()
 
-    def _update_params(self):
-        if self.tokenizer is None:
-            self.tokenizer = identity
+#     def _update_params(self):
+#         if self.tokenizer is None:
+#             self.tokenizer = identity
 
-    def fit(self, X, y=None, *params):
-        return self
+#     def fit(self, X, y=None, *params):
+#         return self
 
-    def transform(self, X, *params):
-        if self.item is None:
-            return [self.tokenizer(x) for x in X]
-        else:
-            new_X = []
-            for x in X:
-                new_x = dict(x)
-                new_x[self.item] = self.tokenizer(x[self.item])
-                new_X.append(new_x)
-        return new_X
+#     def transform(self, X, *params):
+#         if self.item is None:
+#             return [self.tokenizer(x) for x in X]
+#         else:
+#             new_X = []
+#             for x in X:
+#                 new_x = dict(x)
+#                 new_x[self.item] = self.tokenizer(x[self.item])
+#                 new_X.append(new_x)
+#         return new_X
 
-    def get_params(self, deep=True):
-        return {'item': self.item,
-                'tokenizer': self.tokenizer}
+#     def get_params(self, deep=True):
+#         return {'item': self.item,
+#                 'tokenizer': self.tokenizer}
 
-    def set_params(self, **params):
-        for p in params:
-            setattr(self, p, params[p])
-        self._update_params()
+#     def set_params(self, **params):
+#         for p in params:
+#             setattr(self, p, params[p])
+#         self._update_params()
 
 
 class Filter(BaseEstimator, TransformerMixin):
@@ -973,7 +1041,7 @@ def run(truncate=None):
     #               'clf__loss': ['hinge'],
     # }
 
-    parameters = {'tok__tokenizer': [None, happyfuntokenizer, nltktokenizer],
+    parameters = {'tok__fun': [identity, happyfuntokenizer, nltktokenizer],
 
                   'features__ngram__vect__ngram_range': [(1, 3)],
                   'features__ngram__tfidf__use_idf': [True],
@@ -984,7 +1052,8 @@ def run(truncate=None):
                   }
 
     pipeline = Pipeline([
-        ('tok', Tokenizer('text')),
+        ('tok', MapTransformer('text')),
+        ('pos', FunctionTransformer('text', f_senna_multi)),
         ('features', FeatureUnion([
             ('ngram', Pipeline([
                 ('extract', ItemExtractor('text')),
@@ -1001,7 +1070,7 @@ def run(truncate=None):
     scorer = 'accuracy'
     clf = GridSearchCV(pipeline, parameters, n_jobs=1,
                        scoring=scorer, verbose=1)
-    clf = clf.fit(train.data[:truncate], train.target[:truncate])
+    clf = clf.fit(train.data, train.target)
     for param in clf.best_params_:
         print('%s: %r' % (param, clf.best_params_[param]))
 
