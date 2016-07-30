@@ -7,6 +7,8 @@ import codecs
 from collections import namedtuple
 from subprocess import Popen, PIPE
 
+import tempfile
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.linear_model import SGDClassifier
@@ -788,11 +790,11 @@ def f_senna(s):
     return ret
 
 
-def f_senna_multilines(s):
-    """Return the string parsed with senna.
+def f_senna_multi(lst):
+    """Return the list of strings parsed with senna.
 
     Args:
-        s: A string to parse.
+        lst: A list of strings to parse.
 
     Returns:
         A list of dictionnaries with POS, CHK and NER annotations for
@@ -802,26 +804,29 @@ def f_senna_multilines(s):
         IOError: An error occurred.
     """
     ret = []
-    p = Popen(['./senna', '-notokentags',
-               '-usrtokens',
-               '-pos', '-chk', '-ner'],
-              stdin=PIPE,
-              stdout=PIPE,
-              stderr=PIPE, cwd=SENNA_PATH)
+    with tempfile.TemporaryFile() as temp_file:
+        for s in lst:
+            temp_file.write(s.encode())
+            temp_file.write(b'\n')
+        temp_file.seek(0, 0)
+        p = Popen(['./senna', '-notokentags',
+                   '-usrtokens',
+                   '-pos', '-chk', '-ner'],
+                  stdin=temp_file,
+                  stdout=PIPE,
+                  stderr=PIPE, cwd=SENNA_PATH)
     out, err = p.communicate(input=s.encode())
     if p.returncode != 0:
         print(err.replace('*', '#'))
     out = out.decode()
 
     d = {'POS': [], 'CHK': [], 'NER': []}
-    new_line = True
     for line in out.split('\n'):
         line = line.strip()
         if not line:
-            if not new_line:
+            if d['POS'] != []:
                 ret.append(d)
                 d = {'POS': [], 'CHK': [], 'NER': []}
-            new_line = True
             continue
         tags = line.split('\t')
         tags = [x.strip() for x in tags]
