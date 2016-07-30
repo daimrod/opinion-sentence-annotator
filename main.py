@@ -53,13 +53,21 @@ semeval16_polarity_test = os.path.join(semeval16,
 
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 
+
 ########## Data Reader
-Dataset = namedtuple('Dataset', ['data',
-                                 'filenames',  # we don't need this for semeval
-                                 'target_names',
-                                 'target',
-                                 'uid',  'sid',  # we need those for semeval
-                                 ])
+class Dataset():
+    def __init__(self,
+                 data=[],
+                 filenames=[],
+                 target_names=[],
+                 target=[],
+                 uid=[], sid=[]):
+        self.data = data
+        self.filenames = filenames
+        self.target_names = target_names
+        self.target = target
+        self.uid = uid
+        self.sid = sid
 
 
 def read_dataset(ipath, separator='\t',
@@ -944,6 +952,8 @@ def run(truncate=None):
     # Build the target array
     target, labels = strings_to_integers(train.target_names)
     train.target.extend(target)
+    train.data = train.data[:truncate]
+    train.target = train.target[:truncate]
 
     test = read_dataset(semeval16_polarity_test)
     # Convert objective and neutral to objective/neutral
