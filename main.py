@@ -10,6 +10,7 @@ from subprocess import Popen, PIPE
 import tempfile
 
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
@@ -175,50 +176,6 @@ def merge_classes(lst, classes, new_class):
 
 
 ########## Features Extractions
-##### Utils
-class ItemExtractor(BaseEstimator, TransformerMixin):
-    """Extract a particular entry in the input dictionnary.
-
-    Attributes:
-        item: The item to extract.
-    """
-    def __init__(self, item):
-        self.item = item
-
-    def fit(self, X, y=None, **params):
-        return self
-
-    def transform(self, X, **params):
-        return [x[self.item] for x in X]
-
-
-class ExtractFeatures(BaseEstimator, TransformerMixin):
-    """Extract main features.
-
-    Attributes:
-        features: A dictionnary with features to extract of the form
-        {feature_name: extractor} where extractor is a function.
-    """
-    def __init__(self, features):
-        self.features = features
-
-    def fit(self, X, y=None, **params):
-        return self
-
-    def transform(self, X, **params):
-        ret = []
-        for x in X:
-            d = {}
-            for (f_name, f) in self.features:
-                extracted = f(x)
-                if type(extracted) is dict:
-                    d.update(extracted)
-                else:
-                    d[f_name] = extracted
-            ret.append(d)
-        return ret
-
-
 ##### Caps
 def f_all_caps(s):
     """Return the number of words with all characters in upper case.
@@ -238,7 +195,7 @@ def f_all_caps(s):
             n = n + 1
     return n
 
-
+##### Senna
 def f_senna(s):
     """Return the string parsed with senna.
 
@@ -323,75 +280,6 @@ def f_senna_multi(lst):
     return ret
 
 
-class MapTransformer(BaseEstimator, TransformerMixin):
-    """Apply function.
-    """
-    def __init__(self, item=None, fun=None):
-        self.item = item
-        self.fun = fun
-
-    def fit(self, X, y=None, *params):
-        return self
-
-    def transform(self, X, *params):
-        if self.item is None:
-            return [self.fun(x) for x in X]
-        else:
-            new_X = []
-            for x in X:
-                new_x = dict(x)
-                ret = self.fun(x[self.item])
-                if type(ret) is dict:
-                    new_x.update(ret)
-                else:
-                    new_x[self.item] = ret
-                new_X.append(new_x)
-        return new_X
-
-    def get_params(self, deep=True):
-        return {'item': self.item,
-                'fun': self.fun}
-
-    def set_params(self, **params):
-        for p in params:
-            setattr(self, p, params[p])
-
-
-class FunctionTransformer(BaseEstimator, TransformerMixin):
-    """Apply function.
-    """
-    def __init__(self, item=None, fun=None):
-        self.item = item
-        self.fun = fun
-
-    def fit(self, X, y=None, *params):
-        return self
-
-    def transform(self, X, *params):
-        if self.item is None:
-            ret = self.fun(X)
-        else:
-            new_X = self.fun([x[self.item] for x in X])
-            ret = []
-            for new_x in new_X:
-                if type(new_x) is dict:
-                    for x in X:
-                        new_x.update(x)
-                        ret.append(new_x)
-                else:
-                    ret.append(new_x)
-        print(ret)
-        return ret
-
-    def get_params(self, deep=True):
-        return {'item': self.item,
-                'fun': self.fun}
-
-    def set_params(self, **params):
-        for p in params:
-            setattr(self, p, params[p])
-
-
 ##### Tokenizer
 def happyfuntokenizer(s):
     """Tokenize a string with happyfuntokenizing.py.
@@ -429,61 +317,16 @@ def dummy(*args):
     return 'dummy'
 
 
-# class Tokenizer(BaseEstimator, TransformerMixin):
-#     """Tokenize with the given tokenizer."""
-#     def __init__(self, item=None, tokenizer=None):
-#         self.item = item
-#         self.tokenizer = tokenizer
-#         self._update_params()
-
-#     def _update_params(self):
-#         if self.tokenizer is None:
-#             self.tokenizer = identity
-
-#     def fit(self, X, y=None, *params):
-#         return self
-
-#     def transform(self, X, *params):
-#         if self.item is None:
-#             return [self.tokenizer(x) for x in X]
-#         else:
-#             new_X = []
-#             for x in X:
-#                 new_x = dict(x)
-#                 new_x[self.item] = self.tokenizer(x[self.item])
-#                 new_X.append(new_x)
-#         return new_X
-
-#     def get_params(self, deep=True):
-#         return {'item': self.item,
-#                 'tokenizer': self.tokenizer}
-
-#     def set_params(self, **params):
-#         for p in params:
-#             setattr(self, p, params[p])
-#         self._update_params()
+def string_to_feature(s, prefix):
+    f = {}
+    for (idx, val) in enumerate(s.split()):
+        f['%s-%d' % (prefix, idx)] = val
+    return f
 
 
-class Filter(BaseEstimator, TransformerMixin):
-    """Filter input based."""
-    def __init__(self, enabled=True):
-        self.enabled = enabled
-
-    def fit(self, X, y=None, *params):
-        return self
-
-    def transform(self, X, *params):
-        if self.enabled:
-            return X
-        else:
-            return [[0] for x in X]
-
-    def get_params(self, deep=True):
-        return {'enabled': self.enabled}
-
-    def set_params(self, **params):
-        for p in params:
-            setattr(self, p, params[p])
+def apply_pipeline(pipeline, train, test):
+    fitted = pipeline.fit(train)
+    return (fitted.transform(train), fitted.transform(test))
 
 
 ########## Pipeline
@@ -512,6 +355,15 @@ def run(truncate=None):
     target, labels = strings_to_integers(test.target_names)
     test.target.extend(target)
 
+    # Tokenize text
+    for d in train.data:
+        d['tok'] = happyfuntokenizer(d['text'])
+    for d in test.data:
+        d['tok'] = happyfuntokenizer(d['text'])
+
+    for d in train.data:
+        d['f_tok'] = string_to_feature(d['tok'], 'f_tok')
+
     # parameters = {'vect__ngram_range': [(1, 1), (1, 2), (1, 3)],
     #               'tfidf__use_idf': [True, False],
     #               'clf__alpha': [1e-3, 1e-4, 1e-5],
@@ -519,42 +371,43 @@ def run(truncate=None):
     #               'clf__loss': ['hinge'],
     # }
 
-    parameters = {'tok__fun': [identity, happyfuntokenizer, nltktokenizer],
+    # parameters = {'tok__fun': [identity, happyfuntokenizer, nltktokenizer],
 
-                  'features__ngram__vect__ngram_range': [(1, 3)],
-                  'features__ngram__tfidf__use_idf': [True],
+    #               'features__ngram__vect__ngram_range': [(1, 3)],
+    #               'features__ngram__tfidf__use_idf': [True],
 
-                  'clf__alpha': [1e-4],
-                  'clf__n_iter': [5],
-                  'clf__loss': ['hinge'],
-                  }
+    #               'clf__alpha': [1e-4],
+    #               'clf__n_iter': [5],
+    #               'clf__loss': ['hinge'],
+    #               }
 
-    pipeline = Pipeline([
-        ('tok', MapTransformer('text')),
-        ('pos', FunctionTransformer('text', f_senna_multi)),
-        ('features', FeatureUnion([
-            ('ngram', Pipeline([
-                ('extract', ItemExtractor('text')),
-                ('vect', CountVectorizer()),
-                ('tfidf', TfidfTransformer()),
-            ])),
-        ])),
-        ('clf', SGDClassifier(loss='hinge', random_state=42)),
-    ])
+    raw_train_data = [d['tok'] for d in train.data]
+    raw_test_data = [d['tok'] for d in test.data]
 
-    scorer = metrics.make_scorer(metrics.f1_score,
-                                 average='micro')
-    scorer = metrics.make_scorer(metrics.accuracy_score)
-    scorer = 'accuracy'
-    clf = GridSearchCV(pipeline, parameters, n_jobs=1,
-                       scoring=scorer, verbose=1)
-    clf = clf.fit(train.data, train.target)
-    for param in clf.best_params_:
-        print('%s: %r' % (param, clf.best_params_[param]))
+    clf = Pipeline([('clf', SGDClassifier(loss='hinge',
+                                                 n_iter=5,
+                                                 random_state=42))])
+
+    train_data, test_data = apply_pipeline(CountVectorizer(), raw_train_data, raw_test_data)
+    train_data, test_data = apply_pipeline(TfidfTransformer(), train_data, test_data)
+
+    clf = SGDClassifier(loss='hinge',
+                        n_iter=5,
+                        random_state=42).fit(train_data, train.target)
+    predicted = clf.predict(test_data)
+    print(metrics.classification_report(test.target, predicted,
+                                        target_names=list(set(test.target_names))))
+
+
+    # scorer = metrics.make_scorer(metrics.f1_score,
+    #                              average='micro')
+    # scorer = metrics.make_scorer(metrics.accuracy_score)
+    # scorer = 'accuracy'
+    # clf = GridSearchCV(pipeline, parameters, n_jobs=1,
+    #                    scoring=scorer, verbose=1)
+    # clf = clf.fit(train.data, train.target)
+    # for param in clf.best_params_:
+    #     print('%s: %r' % (param, clf.best_params_[param]))
 
     # clf = pipeline
     # clf = clf.fit(train.data, train.target)
-
-    predicted = clf.predict(test.data)
-    print(metrics.classification_report(test.target, predicted,
-                                        target_names=labels))
