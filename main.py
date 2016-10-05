@@ -32,10 +32,25 @@ import os
 if 'DATA_DIR' in os.environ:
     DATA_DIR = os.environ['DATA_DIR']
 else:
-    DATA_DIR = '~/src/thesis/Rouvier-SemEval2016/data/'
+    DATA_DIR = '/media/jadi-g/DATADRIVE1/corpus'
 
-train_path = os.path.join(DATA_DIR, 'train.txt')
-test_path = os.path.join(DATA_DIR, 'twitter16.txt')
+semeval13 = os.path.join(DATA_DIR, 'SEMEVAL13')
+semeval13_polarity_train = os.path.join(semeval13, 'tweeti-b.dist.tsv.2')
+semeval13_polarity_dev = os.path.join(semeval13, 'tweeti-b.dev.dist.tsv.2')
+semeval16 = os.path.join(DATA_DIR, 'SEMEVAL16')
+semeval16_polarity_train = os.path.join(semeval16,
+                                        'Task4',
+                                        '100_topics_100_tweets.sentence-three-point.subtask-A.train.gold.txt')
+semeval16_polarity_devtest = os.path.join(semeval16,
+                                       'Task4',
+                                       '100_topics_100_tweets.sentence-three-point.subtask-A.devtest.gold.txt')
+
+rouvier_train_ = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'train.txt')
+rouvier_test = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'twitter16.txt')
+
+train_path = semeval16_polarity_train
+test_path = semeval16_polarity_devtest
+
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 
 
