@@ -176,6 +176,50 @@ def merge_classes(lst, classes, new_class):
 
 
 ########## Features Extractions
+##### Utils
+class ItemExtractor(BaseEstimator, TransformerMixin):
+    """Extract a particular entry in the input dictionnary.
+
+    Attributes:
+        item: The item to extract.
+    """
+    def __init__(self, item):
+        self.item = item
+
+    def fit(self, X, y=None, **params):
+        return self
+
+    def transform(self, X, **params):
+        return [x[self.item] for x in X]
+
+
+class ExtractFeatures(BaseEstimator, TransformerMixin):
+    """Extract main features.
+
+    Attributes:
+        features: A dictionnary with features to extract of the form
+        {feature_name: extractor} where extractor is a function.
+    """
+    def __init__(self, features):
+        self.features = features
+
+    def fit(self, X, y=None, **params):
+        return self
+
+    def transform(self, X, **params):
+        ret = []
+        for x in X:
+            d = {}
+            for (f_name, f) in self.features:
+                extracted = f(x)
+                if type(extracted) is dict:
+                    d.update(extracted)
+                else:
+                    d[f_name] = extracted
+            ret.append(d)
+        return ret
+
+
 ##### Caps
 def f_all_caps(s):
     """Return the number of words with all characters in upper case.
@@ -384,17 +428,22 @@ def run(truncate=None):
     raw_train_data = [d['tok'] for d in train.data]
     raw_test_data = [d['tok'] for d in test.data]
 
-    clf = Pipeline([('clf', SGDClassifier(loss='hinge',
-                                                 n_iter=5,
-                                                 random_state=42))])
+    fu = FeatureUnion(
+        [('vect', Pipeline([
+            ('selector', ItemExtractor('tok')),
+            ('vect', CountVectorizer())])),
+         ('tfidf', Pipeline([
+             ('selector', ItemExtractor('tok')),
+             ('vect', CountVectorizer()),
+             ('tfidf', TfidfTransformer())]))
+        ])
 
-    train_data, test_data = apply_pipeline(CountVectorizer(), raw_train_data, raw_test_data)
-    train_data, test_data = apply_pipeline(TfidfTransformer(), train_data, test_data)
-
-    clf = SGDClassifier(loss='hinge',
-                        n_iter=5,
-                        random_state=42).fit(train_data, train.target)
-    predicted = clf.predict(test_data)
+    clf = Pipeline([
+        ('union', fu),
+        ('clf', SGDClassifier(loss='hinge',
+                              n_iter=5,
+                              random_state=42))]).fit(train.data, train.target)
+    predicted = clf.predict(test.data)
     print(metrics.classification_report(test.target, predicted,
                                         target_names=list(set(test.target_names))))
 
