@@ -307,20 +307,23 @@ def f_senna_multi(lst):
         print(err.replace('*', '#'))
     out = out.decode()
 
-    d = {'POS': [], 'CHK': [], 'NER': []}
+    d = {'pos': [], 'chk': [], 'ner': []}
     for line in out.split('\n'):
         line = line.strip()
         if not line:
-            if d['POS'] != []:
+            if d['pos'] != []:
+                d['pos'] = ' '.join(d['pos'])
+                d['chk'] = ' '.join(d['chk'])
+                d['ner'] = ' '.join(d['ner'])
                 ret.append(d)
-                d = {'POS': [], 'CHK': [], 'NER': []}
+                d = {'pos': [], 'chk': [], 'ner': []}
             continue
         tags = line.split('\t')
         tags = [x.strip() for x in tags]
         pos, chk, ner = tags
-        d['POS'].append(pos)
-        d['CHK'].append(chk)
-        d['NER'].append(ner)
+        d['pos'].append(pos)
+        d['chk'].append(chk)
+        d['ner'].append(ner)
     return ret
 
 
@@ -395,6 +398,7 @@ def run(truncate=None):
                    'neutral',
                    'objective-OR-neutral'],
                   'neutral')
+
     # Build the target array
     target, labels = strings_to_integers(test.target_names)
     test.target.extend(target)
@@ -405,8 +409,18 @@ def run(truncate=None):
     for d in test.data:
         d['tok'] = happyfuntokenizer(d['text'])
 
-    for d in train.data:
-        d['f_tok'] = string_to_feature(d['tok'], 'f_tok')
+    # Extract Senna
+    senna = f_senna_multi([d['tok'] for d in train.data])
+    for idx in range(len(train.data)):
+        train.data[idx]['pos'] = senna[idx]['pos']
+        train.data[idx]['chk'] = senna[idx]['chk']
+        train.data[idx]['ner'] = senna[idx]['ner']
+
+    senna = f_senna_multi([d['tok'] for d in test.data])
+    for idx in range(len(test.data)):
+        test.data[idx]['pos'] = senna[idx]['pos']
+        test.data[idx]['chk'] = senna[idx]['chk']
+        test.data[idx]['ner'] = senna[idx]['ner']
 
     # parameters = {'vect__ngram_range': [(1, 1), (1, 2), (1, 3)],
     #               'tfidf__use_idf': [True, False],
@@ -425,21 +439,25 @@ def run(truncate=None):
     #               'clf__loss': ['hinge'],
     #               }
 
-    raw_train_data = [d['tok'] for d in train.data]
-    raw_test_data = [d['tok'] for d in test.data]
-
-    fu = FeatureUnion(
-        [('vect', Pipeline([
-            ('selector', ItemExtractor('tok')),
-            ('vect', CountVectorizer())])),
-         ('tfidf', Pipeline([
-             ('selector', ItemExtractor('tok')),
-             ('vect', CountVectorizer()),
-             ('tfidf', TfidfTransformer())]))
-        ])
-
     clf = Pipeline([
-        ('union', fu),
+        ('text_features', FeatureUnion(
+            [('vect', Pipeline([
+                ('selector', ItemExtractor('tok')),
+                ('vect', CountVectorizer())])),
+             ('tfidf', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('vect', CountVectorizer()),
+                 ('tfidf', TfidfTransformer())])),
+             ('pos', Pipeline([
+                 ('selector', ItemExtractor('pos')),
+                 ('vect', CountVectorizer(binary=True))])),
+             ('chk', Pipeline([
+                 ('selector', ItemExtractor('chk')),
+                 ('vect', CountVectorizer(binary=True))])),
+             ('ner', Pipeline([
+                 ('selector', ItemExtractor('ner')),
+                 ('vect', CountVectorizer(binary=True))])),
+            ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
                               random_state=42))]).fit(train.data, train.target)
