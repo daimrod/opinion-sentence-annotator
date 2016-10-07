@@ -268,7 +268,23 @@ def f_all_caps(s):
     for word in s.split(' '):
         if word.upper() == word:
             n = n + 1
-    return n
+    return [n]
+
+
+def f_n_hashtags(s):
+    """Return the number of hashtags in the string.
+
+    Args:
+        s: A string.
+
+    Returns:
+        The number of hashtags.
+    """
+    n = 0
+    for word in s.split(' '):
+        if word.startswith('#'):
+            n += 1
+    return [n]
 
 
 def f_elgongated_words(s):
@@ -291,14 +307,15 @@ times.
             if len(set(s)) == 1:
                 n = n + 1
                 break
-    return n
+    return [n]
 
 
 def f_all_syntax(s):
-    return [f(s) for f in [
-        f_elgongated_words,
-        f_all_caps,
-    ]]
+    ret = []
+    for f in [f_elgongated_words,
+              f_all_caps]:
+        ret.extend(f(s))
+    return ret
 
 
 ##### Senna
@@ -508,6 +525,9 @@ def run(truncate=None):
              ('syntax', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('syntax', ApplyFunction(f_all_syntax))])),
+             ('twitter', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('hashtags', ApplyFunction(f_n_hashtags))])),
             ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
