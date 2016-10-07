@@ -506,7 +506,7 @@ def apply_pipeline(pipeline, train, test):
 
 
 ########## Pipeline
-def run(truncate=None):
+def run(truncate=None, test_dataset=None):
     logger.info('Read train dataset')
     logger.debug(train_path)
     train = read_dataset(train_path)
@@ -525,6 +525,23 @@ def run(truncate=None):
     logger.info('Read test dataset')
     logger.debug(test_path)
     test = read_dataset(test_path)
+    if test_dataset is not None:
+        logger.info('  Filter test dataset (keep only %s)' % test_dataset)
+        indexes = [idx for (idx, val) in enumerate(test.uid) if val == test_dataset]
+        new_uid = []
+        new_sid = []
+        new_data = []
+        new_target_names = []
+        for idx in indexes:
+            new_uid.append(test.uid[idx])
+            new_sid.append(test.sid[idx])
+            new_data.append(test.data[idx])
+            new_target_names.append(test.target_names[idx])
+        test.uid = new_uid
+        test.sid = new_sid
+        test.data = new_data
+        test.target_names = new_target_names
+
     logger.info('  Convert objective and neutral to objective/neutral')
     merge_classes(test.target_names,
                   ['objective',
