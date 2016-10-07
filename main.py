@@ -2,26 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import importlib
 
 import codecs
-from collections import namedtuple
 from subprocess import Popen, PIPE
 
 import tempfile
 
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
-from sklearn.grid_search import GridSearchCV
-from sklearn.grid_search import ParameterGrid
 from sklearn.base import BaseEstimator, TransformerMixin
 import os
-import sys
 
 import happyfuntokenizing
 
