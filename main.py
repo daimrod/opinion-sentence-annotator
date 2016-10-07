@@ -55,11 +55,15 @@ semeval16_polarity_devtest = os.path.join(semeval16,
                                        'Task4',
                                        '100_topics_100_tweets.sentence-three-point.subtask-A.devtest.gold.txt')
 
-rouvier_train_ = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'train.txt')
-rouvier_test = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'twitter16.txt')
+old_rouvier_train = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'train.txt')
+old_rouvier_test = os.path.join(os.path.expanduser('~/src/thesis/Rouvier-SemEval2016/data/'), 'twitter16.txt')
+rouvier_train = os.path.join(semeval16, 'Task4', 'rouvier_train.txt')
+rouvier_test = os.path.join(semeval16, 'Task4', 'rouvier_twitter16.txt')
 
-train_path = semeval16_polarity_train
-test_path = semeval16_polarity_devtest
+# train_path = semeval16_polarity_train
+# test_path = semeval16_polarity_devtest
+train_path = rouvier_train
+test_path = rouvier_test
 
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 
