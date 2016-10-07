@@ -250,6 +250,24 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
 
 
 ##### Caps
+def f_neg_context(s):
+    """Return an enriched representation of the input string with negated
+contexts.
+
+    Add _NEG to words in negated contexts (see
+    http://sentiment.christopherpotts.net/lingstruc.html).
+
+    Args:
+        s: A string.
+
+    Returns:
+        An enriched representation of the input string with negation contexts.
+
+    """
+    re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
+    re_end_ctxt = r"\b[.:;!?]\b"
+
+
 def f_all_caps(s):
     """Return the number of words with all characters in upper case.
 
