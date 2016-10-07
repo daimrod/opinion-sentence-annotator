@@ -281,6 +281,58 @@ def f_n_hashtags(s):
     return [n]
 
 
+def f_punctuation(s):
+    """Return information about the punctuation in the input string.
+
+    - the number of contiguous sequences of exclamation marks,
+      question marks, and both exclamation and question marks;
+    - whether the last token contains exclamation or question mark;
+
+    Args:
+        s: variable documentation.
+
+    Returns:
+        - the number of contiguous sequences of exclamation marks,
+          question marks, and both exclamation and question marks;
+        - whether the last token contains exclamation or question mark;
+    """
+    continuous_excl = 0
+    continuous_quest = 0
+    continuous_excl_quest = 0
+
+    for word in s.split(' '):
+        excl_flag = 0
+        quest_flag = 0
+        excl_quest_flag = 0
+        for char in word:
+            if char == '!':
+                excl_flag += 1
+            else:
+                excl_flag = 0
+            if char == '?':
+                quest_flag += 1
+            else:
+                quest_flag = 0
+            if char == '!' or char == '?':
+                excl_quest_flag += 1
+            else:
+                excl_quest_flag = 0
+        else:
+            if excl_flag > 1:
+                continuous_excl += 1
+            if quest_flag > 1:
+                continuous_quest += 1
+            if excl_quest_flag > 1:
+                continuous_excl_quest += 1
+    last_word = s.split(' ')[-1]
+    last_excl_or_quest = '!' in last_word or '?' in last_word
+
+    return [continuous_excl,
+            continuous_quest,
+            continuous_excl_quest,
+            last_excl_or_quest * 1]
+
+
 def f_elgongated_words(s):
     """Return the number of words with one character repeated more than 2
 times.
@@ -522,6 +574,9 @@ def run(truncate=None):
              ('twitter', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('hashtags', ApplyFunction(f_n_hashtags))])),
+             ('punctuation', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('punctuation', ApplyFunction(f_punctuation))])),
             ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
