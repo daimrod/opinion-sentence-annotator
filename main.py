@@ -193,6 +193,22 @@ class ItemExtractor(BaseEstimator, TransformerMixin):
         return [x[self.item] for x in X]
 
 
+class ApplyFunction(BaseEstimator, TransformerMixin):
+    """Apply a function to each entry.
+
+    Attributes:
+        fun: The function to apply.
+    """
+    def __init__(self, fun):
+        self.fun = fun
+
+    def fit(self, X, y=None, **params):
+        return self
+
+    def transform(self, X, **params):
+        return [self.fun(x) for x in X]
+
+
 class ExtractFeatures(BaseEstimator, TransformerMixin):
     """Extract main features.
 
@@ -238,6 +254,37 @@ def f_all_caps(s):
         if word.upper() == word:
             n = n + 1
     return n
+
+
+def f_elgongated_words(s):
+    """Return the number of words with one character repeated more than 2
+times.
+
+    This function assumes that the string is tokenized and all words
+    are separated by spaces.
+
+    Args:
+        s: A string.
+
+    Returns:
+        The number of words with one character repeated more than 2 times.
+    """
+    n = 0
+    for word in s.split(' '):
+        for i in range(len(word) - 2):
+            s = word[i:3+i]
+            if len(set(s)) == 1:
+                n = n + 1
+                break
+    return n
+
+
+def f_all_syntax(s):
+    return [f(s) for f in [
+        f_elgongated_words,
+        f_all_caps,
+    ]]
+
 
 ##### Senna
 def f_senna(s):
@@ -457,6 +504,9 @@ def run(truncate=None):
              ('ner', Pipeline([
                  ('selector', ItemExtractor('ner')),
                  ('vect', CountVectorizer(binary=True))])),
+             ('syntax', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('syntax', ApplyFunction(f_all_syntax))])),
             ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
