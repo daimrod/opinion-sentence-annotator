@@ -517,5 +517,6 @@ def run(truncate=None):
     predicted = clf.predict(test.data)
     logger.info('Results')
     logger.debug(clf)
-    logger.info(metrics.classification_report(test.target, predicted,
+    logger.info('\n' +
+                metrics.classification_report(test.target, predicted,
                                               target_names=list(set(test.target_names))))
