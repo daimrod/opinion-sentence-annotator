@@ -12,7 +12,7 @@ import tempfile
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
@@ -495,8 +495,7 @@ def run(truncate=None):
                 ('vect', CountVectorizer())])),
              ('tfidf', Pipeline([
                  ('selector', ItemExtractor('tok')),
-                 ('vect', CountVectorizer()),
-                 ('tfidf', TfidfTransformer())])),
+                 ('tfidf', TfidfVectorizer())])),
              ('pos', Pipeline([
                  ('selector', ItemExtractor('pos')),
                  ('vect', CountVectorizer(binary=True))])),
