@@ -27,22 +27,22 @@ import happyfuntokenizing
 
 from nltk.tokenize import TweetTokenizer
 
+if 'logger' not in locals():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+    # StreamHandler
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-# StreamHandler
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(formatter)
-logger.addHandler(sh)
-
-# FileHandler
-fh = logging.FileHandler('log.txt', 'a')
-fh.setFormatter(formatter)
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
+    # FileHandler
+    fh = logging.FileHandler('log.txt', 'a')
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
 
 ## Configuration
 if 'DATA_DIR' in os.environ:
