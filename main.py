@@ -15,6 +15,9 @@ from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
+
+import re
+
 import os
 
 import happyfuntokenizing
@@ -265,7 +268,18 @@ contexts.
 
     """
     re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
-    re_end_ctxt = r"\b[.:;!?]\b"
+    re_end_ctxt = r"[.:;!?]+"
+    s_with_neg = []
+    in_neg_ctxt = False
+    for word in s.split(' '):
+        if re.search(re_end_ctxt, word, flags=re.IGNORECASE):
+            in_neg_ctxt = False
+        elif re.search(re_beg_ctxt, word, flags=re.IGNORECASE):
+            in_neg_ctxt = True
+        elif in_neg_ctxt:
+            word = word + '_NEG'
+        s_with_neg.append(word)
+    return ' '.join(s_with_neg)
 
 
 def f_all_caps(s):
@@ -588,6 +602,12 @@ def run(truncate=None, test_dataset=None):
         test.data[idx]['pos'] = senna[idx]['pos']
         test.data[idx]['chk'] = senna[idx]['chk']
         test.data[idx]['ner'] = senna[idx]['ner']
+
+    logger.info('Identify negated contexts')
+    for d in train.data:
+        d['tok'] = f_neg_context(d['tok'])
+    for d in test.data:
+        d['tok'] = f_neg_context(d['tok'])
 
     logger.info('Train the pipeline')
     clf = Pipeline([
