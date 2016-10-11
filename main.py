@@ -648,3 +648,4 @@ def run(truncate=None, test_dataset=None):
     logger.info('\n' +
                 metrics.classification_report(test.target, predicted,
                                               target_names=list(set(test.target_names))))
+    return clf
