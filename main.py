@@ -47,6 +47,20 @@ if 'DATA_DIR' in os.environ:
 else:
     DATA_DIR = '/media/jadi-g/DATADRIVE1/corpus'
 
+### Stanford Tools
+if 'CLASSPATH' not in os.environ:
+    os.environ['CLASSPATH'] = ''
+os.environ['CLASSPATH'] = os.path.expanduser('~/src/java/stanford-for-nltk/stanford-parser-full-2015-12-09/') + ':' + os.environ['CLASSPATH']
+os.environ['CLASSPATH'] = os.path.expanduser('~/src/java/stanford-for-nltk/stanford-postagger-full-2015-12-09/') + ':' + os.environ['CLASSPATH']
+
+if 'STANFORD_MODELS' not in os.environ:
+    os.environ['STANFORD_MODELS'] = ''
+os.environ['STANFORD_MODELS'] = os.path.expanduser('~/src/java/stanford-for-nltk/') + ':' + os.environ['STANFORD_MODELS']
+os.environ['STANFORD_MODELS'] = os.path.expanduser('~/src/java/stanford-for-nltk/stanford-parser-full-2015-12-09/') + ':' + os.environ['STANFORD_MODELS']
+os.environ['STANFORD_MODELS'] = os.path.expanduser('~/src/java/stanford-for-nltk/stanford-postagger-full-2015-12-09/models/') + ':' +os.environ['STANFORD_MODELS']
+
+
+### Dataset
 semeval13 = os.path.join(DATA_DIR, 'SEMEVAL13')
 semeval13_polarity_train = os.path.join(semeval13, 'tweeti-b.dist.tsv.2')
 semeval13_polarity_dev = os.path.join(semeval13, 'tweeti-b.dev.dist.tsv.2')
