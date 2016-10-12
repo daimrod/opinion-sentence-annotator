@@ -502,6 +502,21 @@ def f_senna_multi(lst):
     return ret
 
 
+def pretty_pipeline(obj):
+    if isinstance(obj, list):
+        return [pretty_pipeline(o) for o in obj]
+    elif isinstance(obj, FeatureUnion):
+        return {'n_jobs': obj.n_jobs,
+                'transformer_list': obj.transformer_list,
+                'transformer_weights': obj.transformer_weights}
+    elif isinstance(obj, Pipeline):
+        return {'steps': pretty_pipeline(obj.steps)}
+    elif isinstance(obj, tuple):
+        return pretty_pipeline(list(obj))
+    else:
+        return obj
+
+
 ##### Tokenizer
 def happyfuntokenizer(s):
     """Tokenize a string with happyfuntokenizing.py.
@@ -659,7 +674,7 @@ def run(truncate=None, test_dataset=None):
     logger.info('Classify test data')
     predicted = clf.predict(test.data)
     logger.info('Results')
-    logger.debug(clf)
+    logger.debug(pretty_pipeline(clf))
     logger.info('\n' +
                 metrics.classification_report(test.target, predicted,
                                               target_names=list(set(test.target_names))))
