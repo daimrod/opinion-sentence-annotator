@@ -10,11 +10,13 @@ import tempfile
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
+
 
 import re
 
@@ -502,6 +504,19 @@ def f_senna_multi(lst):
     return ret
 
 
+def make_f_project_lexicon(lexicon):
+    def f_project_lexicon(s):
+        ret = []
+        for word in s.split(' '):
+            word = word.lower()
+            if word in lexicon:
+                ret.append(lexicon[word])
+            else:
+                ret.append('NOT_FOUND')
+        return ' '.join(ret)
+    return f_project_lexicon
+
+
 def pretty_pipeline(obj):
     if isinstance(obj, list):
         return [pretty_pipeline(o) for o in obj]
@@ -559,6 +574,15 @@ def string_to_feature(s, prefix):
     for (idx, val) in enumerate(s.split()):
         f['%s-%d' % (prefix, idx)] = val
     return f
+
+
+def make_string_to_feature(prefix):
+    def string_to_feature(s):
+        f = {}
+        for (idx, val) in enumerate(s.split()):
+            f['%s-%d' % (prefix, idx)] = val
+        return f
+    return string_to_feature
 
 
 def apply_pipeline(pipeline, train, test):
@@ -639,6 +663,8 @@ def run(truncate=None, test_dataset=None):
     for d in test.data:
         d['tok'] = f_neg_context(d['tok'])
 
+    lex = {'bad': 'neg', 'great': 'pos', 'simple': 'neutral', 'this': 'neutral'}
+
     logger.info('Train the pipeline')
     clf = Pipeline([
         ('text_features', FeatureUnion(
@@ -663,6 +689,11 @@ def run(truncate=None, test_dataset=None):
              ('twitter', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('hashtags', ApplyFunction(f_n_hashtags))])),
+             ('emoticon_lexicon', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('projection', ApplyFunction(make_f_project_lexicon(lex))),
+                 ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
+                 ('convertion', DictVectorizer())])),
              ('punctuation', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('punctuation', ApplyFunction(f_punctuation))])),
