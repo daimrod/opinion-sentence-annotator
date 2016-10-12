@@ -559,7 +559,8 @@ def run(truncate=None, test_dataset=None):
     test = read_dataset(test_path)
     if test_dataset is not None:
         logger.info('  Filter test dataset (keep only %s)' % test_dataset)
-        indexes = [idx for (idx, val) in enumerate(test.uid) if val == test_dataset]
+        indexes = [idx for (idx, val) in enumerate(test.uid)
+                   if val == test_dataset]
         new_uid = []
         new_sid = []
         new_data = []
