@@ -16,7 +16,7 @@ from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
-
+import pickle
 
 import re
 
@@ -591,77 +591,58 @@ def apply_pipeline(pipeline, train, test):
 
 
 ########## Pipeline
-def run(truncate=None, test_dataset=None):
-    logger.info('Read train dataset')
-    logger.debug(train_path)
-    train = read_dataset(train_path)
+def preprocess(dataset_path, force=False):
+    preprocessed_path = dataset_path + '.pp.pickle'
+    if not force and os.path.isfile(preprocessed_path):
+        return preprocessed_path
+
+    logger.info('Read dataset')
+    logger.debug(dataset_path)
+    dataset = read_dataset(dataset_path)
     logger.info('  Convert objective and neutral to objective/neutral')
-    merge_classes(train.target_names,
+    merge_classes(dataset.target_names,
                   ['objective',
                    'neutral',
                    'objective-OR-neutral'],
                   'neutral')
     logger.info('  Build the target array')
-    target, labels = strings_to_integers(train.target_names)
-    train.target.extend(target)
-    train.data = train.data[:truncate]
-    train.target = train.target[:truncate]
-
-    logger.info('Read test dataset')
-    logger.debug(test_path)
-    test = read_dataset(test_path)
-    if test_dataset is not None:
-        logger.info('  Filter test dataset (keep only %s)' % test_dataset)
-        indexes = [idx for (idx, val) in enumerate(test.uid)
-                   if val == test_dataset]
-        new_uid = []
-        new_sid = []
-        new_data = []
-        new_target_names = []
-        for idx in indexes:
-            new_uid.append(test.uid[idx])
-            new_sid.append(test.sid[idx])
-            new_data.append(test.data[idx])
-            new_target_names.append(test.target_names[idx])
-        test.uid = new_uid
-        test.sid = new_sid
-        test.data = new_data
-        test.target_names = new_target_names
-
-    logger.info('  Convert objective and neutral to objective/neutral')
-    merge_classes(test.target_names,
-                  ['objective',
-                   'neutral',
-                   'objective-OR-neutral'],
-                  'neutral')
-    logger.info('  Build the target array')
-    target, labels = strings_to_integers(test.target_names)
-    test.target.extend(target)
+    target, labels = strings_to_integers(dataset.target_names)
+    dataset.target.extend(target)
 
     logger.info('Tokenize text')
-    for d in train.data:
-        d['tok'] = happyfuntokenizer(d['text'])
-    for d in test.data:
+    for d in dataset.data:
         d['tok'] = happyfuntokenizer(d['text'])
 
     logger.info('Extract Senna features')
-    senna = f_senna_multi([d['tok'] for d in train.data])
-    for idx in range(len(train.data)):
-        train.data[idx]['pos'] = senna[idx]['pos']
-        train.data[idx]['chk'] = senna[idx]['chk']
-        train.data[idx]['ner'] = senna[idx]['ner']
-
-    senna = f_senna_multi([d['tok'] for d in test.data])
-    for idx in range(len(test.data)):
-        test.data[idx]['pos'] = senna[idx]['pos']
-        test.data[idx]['chk'] = senna[idx]['chk']
-        test.data[idx]['ner'] = senna[idx]['ner']
+    senna = f_senna_multi([d['tok'] for d in dataset.data])
+    for idx in range(len(dataset.data)):
+        dataset.data[idx]['pos'] = senna[idx]['pos']
+        dataset.data[idx]['chk'] = senna[idx]['chk']
+        dataset.data[idx]['ner'] = senna[idx]['ner']
 
     logger.info('Identify negated contexts')
-    for d in train.data:
-        d['tok'] = f_neg_context(d['tok'])
-    for d in test.data:
-        d['tok'] = f_neg_context(d['tok'])
+    for d in dataset.data:
+        d['neg_tok'] = f_neg_context(d['tok'])
+
+    with open(preprocessed_path, 'wb') as p_file:
+        pickle.dump(dataset, p_file)
+    return preprocessed_path
+
+
+def train():
+    pass
+
+
+def test():
+    pass
+
+
+def run(truncate=None, test_dataset=None):
+    with open(preprocess(train_path, force=False), 'rb') as p_file:
+        train = pickle.load(p_file)
+
+    with open(preprocess(test_path, force=False), 'rb') as p_file:
+        test = pickle.load(p_file)
 
     lex = {'bad': 'neg', 'great': 'pos', 'simple': 'neutral', 'this': 'neutral'}
 
