@@ -5,6 +5,7 @@ import logging
 
 import codecs
 from subprocess import Popen, PIPE
+from lxml import etree
 
 import tempfile
 
@@ -85,6 +86,21 @@ train_path = rouvier_train
 test_path = rouvier_test
 
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
+
+## Lexicons
+bing_liu_lexicon_path = dict({'negative': os.path.join(DATA_DIR, 'bing-liu-lexicon/negative-words.txt'),
+                              'positive': os.path.join(DATA_DIR, 'bing-liu-lexicon/positive-words.txt')})
+
+mpqa_lexicon_path = os.path.join(DATA_DIR, 'subjectivity_clues_hltemnlp05/subjclueslen1-HLTEMNLP05.tff')
+
+mpqa_plus_lexicon_path = os.path.join(DATA_DIR, 'mpqa_plus_lex.xml')
+
+nrc_lexicon_path = os.path.join(DATA_DIR, 'NRC-Emotion-Lexicon-v0.92/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.txt.nodoc')
+
+carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
+
+happy_emoticons_path = os.path.join(DATA_DIR, 'happy_emoticons.txt')
+sad_emoticons_path = os.path.join(DATA_DIR, 'sad_emoticons.txt')
 
 
 ########## Data Reader
@@ -207,6 +223,128 @@ def merge_classes(lst, classes, new_class):
     return lst
 
 
+def read_bing_liu(neg_path, pos_path):
+    """Return a dictionary of negative/positive words.
+
+    Args:
+        neg_path: variable documentation.
+        pos_path: variable documentation.
+
+     Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    for (path, c) in [(neg_path, 'negative'),
+                      (pos_path, 'positive')]:
+        with codecs.open(path, 'r', 'utf-8') as ifile:
+            for word in ifile:
+                word = word.strip()
+                if word and not word.startswith(';'):
+                    ret[word] = c
+    return ret
+
+
+def read_mpqa(mpqa_path):
+    """Return a dictionary of negative/positive words.
+
+    Args:
+        neg_path: variable documentation.
+        pos_path: variable documentation.
+
+     Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(mpqa_path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            cols = line.split()
+            if len(cols) == 6:
+                word = '='.join(cols[2].split('=')[1:])
+                polarity = '='.join(cols[5].split('=')[1:])
+                ret[word] = polarity
+    return ret
+
+
+def read_mpqa_plus(mpqa_path_plus):
+    """Return a dictionary of negative/positive words.
+
+    Args:
+
+     Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(mpqa_path_plus, 'r', 'utf-8') as ifile:
+        tree = etree.parse(ifile)
+    root = tree.getroot()
+    for lexical_entry in root.iterchildren():
+        word = None
+        polarity = None
+        for el in lexical_entry.iterchildren():
+            if el.tag == 'morpho':
+                for node in el.iterchildren():
+                    if node.tag == 'name':
+                        word = node.text
+            if el.tag == 'evaluation':
+                polarity = el.get('subtype')
+        if word is not None and polarity is not None:
+            ret[word] = polarity
+    return ret
+
+
+def read_nrc(nrc_path):
+    """Return a dictionary of negative/positive words.
+
+    Args:
+        nrc_path: variable documentation.
+
+    Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(nrc_path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            word, affect, valence = line.split('\t')
+            if affect == 'positive' or affect == 'negative':
+                ret[word] = affect
+    return ret
+
+
+def read_carnegie_clusters(path):
+    """Return a lexicon representation of carnegie clusters.
+
+    Args:
+        path: Path to Carnegie clusters.
+
+    Returns:
+        A dictionnary of words in Carnegie clusters.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            cluster_id, word, count = line.split('\t')
+            ret[word] = cluster_id
+    return ret
+
+
 ########## Features Extractions
 ##### Utils
 class ItemExtractor(BaseEstimator, TransformerMixin):
@@ -268,7 +406,61 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
         return ret
 
 
-##### Caps
+def pretty_pipeline(obj):
+    if isinstance(obj, list):
+        return [pretty_pipeline(o) for o in obj]
+    elif isinstance(obj, FeatureUnion):
+        return {'n_jobs': obj.n_jobs,
+                'transformer_list': obj.transformer_list,
+                'transformer_weights': obj.transformer_weights}
+    elif isinstance(obj, Pipeline):
+        return {'steps': pretty_pipeline(obj.steps)}
+    elif isinstance(obj, tuple):
+        return pretty_pipeline(list(obj))
+    else:
+        return obj
+
+
+def f_emoticons(s):
+    """Return informations about emoticons.
+
+    - presence/absence of positive and negative emoticons at any
+      position in the tweet;
+    - whether the last token is a positive or negative emoticon;
+
+    Args:
+        s: variable documentation.
+
+    Returns:
+        A vector representation of emoticons information in s.
+    """
+    happy_set = set()
+    sad_set = set()
+    with codecs.open(happy_emoticons_path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            emoticon = line.strip()
+            happy_set.add(emoticon)
+    with codecs.open(sad_emoticons_path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            emoticon = line.strip()
+            sad_set.add(emoticon)
+    has_happy = False
+    has_sad = False
+    for word in s.split(' '):
+        if word in happy_set:
+            has_happy = True
+        elif word in sad_set:
+            has_sad = True
+
+    if s[-1] in happy_set:
+        last_tok = 1
+    elif s[-1] in sad_set:
+        last_tok = -1
+    else:
+        last_tok = 0
+    return [has_happy, has_sad, last_tok]
+
+
 def f_neg_context(s):
     """Return an enriched representation of the input string with negated
 contexts.
@@ -517,21 +709,6 @@ def make_f_project_lexicon(lexicon):
     return f_project_lexicon
 
 
-def pretty_pipeline(obj):
-    if isinstance(obj, list):
-        return [pretty_pipeline(o) for o in obj]
-    elif isinstance(obj, FeatureUnion):
-        return {'n_jobs': obj.n_jobs,
-                'transformer_list': obj.transformer_list,
-                'transformer_weights': obj.transformer_weights}
-    elif isinstance(obj, Pipeline):
-        return {'steps': pretty_pipeline(obj.steps)}
-    elif isinstance(obj, tuple):
-        return pretty_pipeline(list(obj))
-    else:
-        return obj
-
-
 ##### Tokenizer
 def happyfuntokenizer(s):
     """Tokenize a string with happyfuntokenizing.py.
@@ -637,23 +814,81 @@ def test():
     pass
 
 
-def run(truncate=None, test_dataset=None):
+def runNRCCanada(truncate=None, test_dataset=None):
+    '''Reimplementation of NRCCanada
+
+http://www.saifmohammad.com/WebPages/Abstracts/NRC-SentimentAnalysis.htm
+
+FEATURES:
+
+For tweet-level sentiment detection:
+- all-caps: the number of words with all characters in upper case;
+- clusters: presence/absence of tokens from each of the 1000 clusters
+  (provided by Carnegie Mellon University's Twitter NLP tool);
+- elongated words: the number of words with one character repeated
+  more than 2 times, e.g. 'soooo';
+- emoticons:
+      - presence/absence of positive and negative emoticons at any
+        position in the tweet;
+      - whether the last token is a positive or negative emoticon;
+- hashtags: the number of hashtags;
+- negation: the number of negated contexts. A negated context also
+  affects the ngram and lexicon features: each word and associated
+  with it polarity in a negated context become negated (e.g., 'not
+  perfect' becomes 'not perfect_NEG', 'POLARITY_positive' becomes
+  'POLARITY_positive_NEG');
+- POS: the number of occurrences for each part-of-speech tag;
+- punctuation:
+      - the number of contiguous sequences of exclamation marks,
+        question marks, and both exclamation and question marks;
+      - whether the last token contains exclamation or question mark;
+- sentiment lexicons: automatically created lexicons (NRC Hashtag
+  Sentiment Lexicon, Sentiment140 Lexicon), manually created sentiment
+  lexicons (NRC Emotion Lexicon, MPQA, Bing Liu Lexicon). For each
+  lexicon and each polarity we calculated:
+      - total count of tokens in the tweet with score greater than 0;
+      - the sum of the scores for all tokens in the tweet;
+      - the maximal score;
+      - the non-zero score of the last token in the tweet;
+      The lexicon features were created for all tokens in the tweet,
+      for each part-of-speech tag, for hashtags, and for all-caps
+      tokens.
+- word ngrams, character ngrams.
+    '''
     with open(preprocess(train_path, force=False), 'rb') as p_file:
         train = pickle.load(p_file)
 
     with open(preprocess(test_path, force=False), 'rb') as p_file:
         test = pickle.load(p_file)
 
-    lex = {'bad': 'neg', 'great': 'pos', 'simple': 'neutral', 'this': 'neutral'}
+    bing_liu_lexicon = read_bing_liu(bing_liu_lexicon_path['negative'], bing_liu_lexicon_path['positive'])
+    nrc_lexicon = read_nrc(nrc_lexicon_path)
+    mpqa_lexicon = read_mpqa(mpqa_lexicon_path)
+    mpqa_plus_lexicon = read_mpqa_plus(mpqa_plus_lexicon_path)
+    carnegie_clusters = read_carnegie_clusters(carnegie_clusters_path)
 
     logger.info('Train the pipeline')
     clf = Pipeline([
         ('text_features', FeatureUnion(
-            [('vect', Pipeline([
+            [('all caps', Pipeline([
                 ('selector', ItemExtractor('tok')),
-                ('vect', CountVectorizer())])),
-             ('tfidf', Pipeline([
+                ('all caps', ApplyFunction(f_all_caps))])),
+             ('clusters', Pipeline([
                  ('selector', ItemExtractor('tok')),
+                 ('clusters', ApplyFunction(make_f_project_lexicon(carnegie_clusters))),
+                 ('string_to_feature', ApplyFunction(make_string_to_feature('carnegie_clusters')))
+                 ('convertion', DictVectorizer())])),
+             ('elongated', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('elongated', ApplyFunction(f_elgongated_words))])),
+             ('emoticons', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('emoticons', ApplyFunction(f_emoticons))])),
+             ('vect', Pipeline([
+                 ('selector', ItemExtractor('neg_tok')),
+                 ('vect', CountVectorizer())])),
+             ('tfidf', Pipeline([
+                 ('selector', ItemExtractor('neg_tok')),
                  ('tfidf', TfidfVectorizer())])),
              ('pos', Pipeline([
                  ('selector', ItemExtractor('pos')),
@@ -664,21 +899,37 @@ def run(truncate=None, test_dataset=None):
              ('ner', Pipeline([
                  ('selector', ItemExtractor('ner')),
                  ('vect', CountVectorizer(binary=True))])),
+             
              ('syntax', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('syntax', ApplyFunction(f_all_syntax))])),
              ('twitter', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('hashtags', ApplyFunction(f_n_hashtags))])),
-             ('emoticon_lexicon', Pipeline([
+             # ('bing_liu_lexicon', Pipeline([
+             #     ('selector', ItemExtractor('tok')),
+             #     ('projection', ApplyFunction(make_f_project_lexicon(bing_liu_lexicon))),
+             #     ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
+             #     ('convertion', DictVectorizer())])),
+             ('nrc_lexicon', Pipeline([
                  ('selector', ItemExtractor('tok')),
-                 ('projection', ApplyFunction(make_f_project_lexicon(lex))),
-                 ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
+                 ('projection', ApplyFunction(make_f_project_lexicon(nrc_lexicon))),
+                 ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
                  ('convertion', DictVectorizer())])),
+             # ('mpqa_lexicon', Pipeline([
+             #     ('selector', ItemExtractor('tok')),
+             #     ('projection', ApplyFunction(make_f_project_lexicon(mpqa_lexicon))),
+             #     ('string_to_feature', ApplyFunction(make_string_to_feature('mpqa'))),
+             #     ('convertion', DictVectorizer())])),
+             # ('mpqa_plus_lexicon', Pipeline([
+             #     ('selector', ItemExtractor('tok')),
+             #     ('projection', ApplyFunction(make_f_project_lexicon(mpqa_plus_lexicon))),
+             #     ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
+             #     ('convertion', DictVectorizer())])),
              ('punctuation', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('punctuation', ApplyFunction(f_punctuation))])),
-            ])),
+             ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
                               random_state=42))]).fit(train.data, train.target)
