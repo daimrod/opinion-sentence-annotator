@@ -20,7 +20,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import pickle
 
 import re
-
+import numbers
 import os
 
 import happyfuntokenizing
@@ -730,6 +730,70 @@ def f_senna_multi(lst):
     return ret
 
 
+def make_f_nrc_project_lexicon(lexicon):
+    """Make a feature generator with the given lexicon like NRC.
+
+    For each lexicon and each polarity we calculated:
+      - total count of tokens in the tweet with score greater than 0;
+      - the sum of the scores for all tokens in the tweet;
+      - the maximal score;
+      - the non-zero score of the last token in the tweet;
+    The lexicon features were created for all tokens in the tweet, for
+    each part-of-speech tag, for hashtags, and for all-caps tokens.
+
+    Args:
+        lexicon: A lexicon.
+
+    Returns:
+        A feature generator for the given lexicon.
+    """
+    def word_to_score(lexicon, word):
+        if word in lexicon:
+            score = lexicon[word]
+            if score == 'positive':
+                score = 1
+            elif score == 'negative':
+                score = -1
+            elif not isinstance(score, numbers.Real):
+                logger.error('Cannot determine what to do with %s = %s',
+                             word, str(score))
+                score = None
+        else:
+            score = None
+        return score
+
+    def f_nrc_project_lexicon(s):
+        total_pos = 0
+        total_neg = 0
+        max_pos = 0
+        max_neg = 0
+        last_token_score = 0
+        for word in s.split(' '):
+            word = word.lower()
+            if word in lexicon:
+                score = word_to_score(lexicon, word)
+                if score is None:
+                    continue
+                if score > 0:
+                    total_pos += score
+                    if score > max_pos:
+                        max_pos = score
+                else:
+                    score = -score
+                    total_neg += score
+                    if score > max_neg:
+                        max_neg = score
+        last_token_score = word_to_score(lexicon, s[-1])
+        if last_token_score is None:
+            last_token_score = 0
+        return [total_pos,
+                total_neg,
+                total_pos - total_neg,
+                max_pos,
+                max_neg,
+                last_token_score]
+    return f_nrc_project_lexicon
+
 ## Input Modifiers (IM)
 def make_im_project_lexicon(lexicon, not_found='NOT_FOUND'):
     def im_project_lexicon(s):
@@ -927,6 +991,7 @@ For tweet-level sentiment detection:
 
     bing_liu_lexicon = read_bing_liu(bing_liu_lexicon_path['negative'], bing_liu_lexicon_path['positive'])
     nrc_emotion_lexicon = read_nrc_emotion(nrc_emotion_lexicon_path)
+    nrc_hashtag_lexicon = read_nrc_hashtag(nrc_hashtag_lexicon_path)
     mpqa_lexicon = read_mpqa(mpqa_lexicon_path)
     mpqa_plus_lexicon = read_mpqa_plus(mpqa_plus_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(carnegie_clusters_path)
@@ -959,6 +1024,14 @@ For tweet-level sentiment detection:
              ('punctuation', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('punctuation', ApplyFunction(f_punctuation))])),
+             ('nrc_emotion_lexicon', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('projection', ApplyFunction(make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
+             ('nrc_hashtag_lexicon', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('projection', ApplyFunction(make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
+
+
              ('tfidf', Pipeline([
                  ('selector', ItemExtractor('neg_tok')),
                  ('tfidf', TfidfVectorizer())])),
@@ -974,11 +1047,6 @@ For tweet-level sentiment detection:
              #     ('projection', ApplyFunction(make_im_project_lexicon(bing_liu_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
              #     ('convertion', DictVectorizer())])),
-             ('nrc_emotion_lexicon', Pipeline([
-                 ('selector', ItemExtractor('tok')),
-                 ('projection', ApplyFunction(make_im_project_lexicon(nrc_emotion_lexicon))),
-                 ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
-                 ('convertion', DictVectorizer())])),
              # ('mpqa_lexicon', Pipeline([
              #     ('selector', ItemExtractor('tok')),
              #     ('projection', ApplyFunction(make_im_project_lexicon(mpqa_lexicon))),
