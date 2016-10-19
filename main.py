@@ -456,6 +456,7 @@ def pretty_pipeline(obj):
         return obj
 
 
+## Features generators
 def f_emoticons(s):
     """Return informations about emoticons.
 
@@ -494,35 +495,6 @@ def f_emoticons(s):
     else:
         last_tok = 0
     return [has_happy, has_sad, last_tok]
-
-
-def f_neg_context(s):
-    """Return an enriched representation of the input string with negated
-contexts.
-
-    Add _NEG to words in negated contexts (see
-    http://sentiment.christopherpotts.net/lingstruc.html).
-
-    Args:
-        s: A string.
-
-    Returns:
-        An enriched representation of the input string with negation contexts.
-
-    """
-    re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
-    re_end_ctxt = r"[.:;!?]+"
-    s_with_neg = []
-    in_neg_ctxt = False
-    for word in s.split(' '):
-        if re.search(re_end_ctxt, word, flags=re.IGNORECASE):
-            in_neg_ctxt = False
-        elif re.search(re_beg_ctxt, word, flags=re.IGNORECASE):
-            in_neg_ctxt = True
-        elif in_neg_ctxt:
-            word = word + '_NEG'
-        s_with_neg.append(word)
-    return ' '.join(s_with_neg)
 
 
 def f_n_neg_context(s):
@@ -758,8 +730,9 @@ def f_senna_multi(lst):
     return ret
 
 
-def make_f_project_lexicon(lexicon, not_found='NOT_FOUND'):
-    def f_project_lexicon(s):
+## Input Modifiers (IM)
+def make_im_project_lexicon(lexicon, not_found='NOT_FOUND'):
+    def im_project_lexicon(s):
         ret = []
         for word in s.split(' '):
             word = word.lower()
@@ -768,7 +741,36 @@ def make_f_project_lexicon(lexicon, not_found='NOT_FOUND'):
             else:
                 ret.append(not_found)
         return ' '.join(ret)
-    return f_project_lexicon
+    return im_project_lexicon
+
+
+def im_neg_context(s):
+    """Return an enriched representation of the input string with negated
+contexts.
+
+    Add _NEG to words in negated contexts (see
+    http://sentiment.christopherpotts.net/lingstruc.html).
+
+    Args:
+        s: A string.
+
+    Returns:
+        An enriched representation of the input string with negation contexts.
+
+    """
+    re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
+    re_end_ctxt = r"[.:;!?]+"
+    s_with_neg = []
+    in_neg_ctxt = False
+    for word in s.split(' '):
+        if re.search(re_end_ctxt, word, flags=re.IGNORECASE):
+            in_neg_ctxt = False
+        elif re.search(re_beg_ctxt, word, flags=re.IGNORECASE):
+            in_neg_ctxt = True
+        elif in_neg_ctxt:
+            word = word + '_NEG'
+        s_with_neg.append(word)
+    return ' '.join(s_with_neg)
 
 
 ##### Tokenizer
@@ -861,7 +863,7 @@ def preprocess(dataset_path, force=False):
 
     logger.info('Identify negated contexts')
     for d in dataset.data:
-        d['neg_tok'] = f_neg_context(d['tok'])
+        d['neg_tok'] = im_neg_context(d['tok'])
 
     with open(preprocessed_path, 'wb') as p_file:
         pickle.dump(dataset, p_file)
@@ -937,8 +939,7 @@ For tweet-level sentiment detection:
                 ('all caps', ApplyFunction(f_all_caps))])),
              ('clusters', Pipeline([
                  ('selector', ItemExtractor('tok')),
-                 ('clusters', ApplyFunction(make_f_project_lexicon(carnegie_clusters))),
-                 #('string_to_feature', ApplyFunction(make_string_to_feature('carnegie_clusters'))),
+                 ('clusters', ApplyFunction(make_im_project_lexicon(carnegie_clusters))),
                  ('convertion', CountVectorizer(binary=True))])),
              ('elongated', Pipeline([
                  ('selector', ItemExtractor('tok')),
@@ -970,22 +971,22 @@ For tweet-level sentiment detection:
                           
              # ('bing_liu_lexicon', Pipeline([
              #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_f_project_lexicon(bing_liu_lexicon))),
+             #     ('projection', ApplyFunction(make_im_project_lexicon(bing_liu_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
              #     ('convertion', DictVectorizer())])),
              ('nrc_emotion_lexicon', Pipeline([
                  ('selector', ItemExtractor('tok')),
-                 ('projection', ApplyFunction(make_f_project_lexicon(nrc_emotion_lexicon))),
+                 ('projection', ApplyFunction(make_im_project_lexicon(nrc_emotion_lexicon))),
                  ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
                  ('convertion', DictVectorizer())])),
              # ('mpqa_lexicon', Pipeline([
              #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_f_project_lexicon(mpqa_lexicon))),
+             #     ('projection', ApplyFunction(make_im_project_lexicon(mpqa_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('mpqa'))),
              #     ('convertion', DictVectorizer())])),
              # ('mpqa_plus_lexicon', Pipeline([
              #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_f_project_lexicon(mpqa_plus_lexicon))),
+             #     ('projection', ApplyFunction(make_im_project_lexicon(mpqa_plus_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
              #     ('convertion', DictVectorizer())])),
              ])),
