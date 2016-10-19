@@ -754,6 +754,9 @@ def make_f_nrc_project_lexicon(lexicon):
                 score = 1
             elif score == 'negative':
                 score = -1
+            # MPQA has the neutral and both annotations
+            elif score == 'neutral' or score == 'both':
+                score = 0
             elif not isinstance(score, numbers.Real):
                 logger.error('Cannot determine what to do with %s = %s',
                              word, str(score))
@@ -793,6 +796,7 @@ def make_f_nrc_project_lexicon(lexicon):
                 max_neg,
                 last_token_score]
     return f_nrc_project_lexicon
+
 
 ## Input Modifiers (IM)
 def make_im_project_lexicon(lexicon, not_found='NOT_FOUND'):
@@ -993,7 +997,6 @@ For tweet-level sentiment detection:
     nrc_emotion_lexicon = read_nrc_emotion(nrc_emotion_lexicon_path)
     nrc_hashtag_lexicon = read_nrc_hashtag(nrc_hashtag_lexicon_path)
     mpqa_lexicon = read_mpqa(mpqa_lexicon_path)
-    mpqa_plus_lexicon = read_mpqa_plus(mpqa_plus_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(carnegie_clusters_path)
 
     logger.info('Train the pipeline')
@@ -1030,6 +1033,12 @@ For tweet-level sentiment detection:
              ('nrc_hashtag_lexicon', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('projection', ApplyFunction(make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
+             ('bing_liu_lexicon', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('projection', ApplyFunction(make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
+             ('mpqa_lexicon', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('projection', ApplyFunction(make_f_nrc_project_lexicon(mpqa_lexicon)))])),
 
 
              ('tfidf', Pipeline([
