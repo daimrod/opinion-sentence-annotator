@@ -8,20 +8,21 @@ from subprocess import Popen, PIPE
 from lxml import etree
 
 import tempfile
+import pickle
+import re
+import numbers
+import os
+import ast
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
-import pickle
 
-import re
-import numbers
-import os
+import gensim
 
 import happyfuntokenizing
 
@@ -900,6 +901,33 @@ def apply_pipeline(pipeline, train, test):
 
 
 ########## Pipeline
+class TwitterLoggerReader(object):
+    """Read tweets as recorded by my twitter-logger project.
+
+    Tweets are saved using the following format :
+    ('id', u'ID')\t('text', u'TWEET')
+
+    Attributes:
+        filename: The path to the tweets.
+        tokenizer: A function to tokenize a string.
+    """
+
+    def __init__(self, filename=None, tokenizer=happyfuntokenizer):
+        self.filename = filename
+        self.tokenizer = tokenizer
+
+    def __iter__(self):
+        for line in codecs.open(self.filename, 'r', 'utf-8'):
+            line = line.strip()
+            elements = line.split('\t')
+            if len(elements) != 2:
+                logger.error('Incorrect formatting %s', line)
+                continue
+            _, t_text = elements
+            _, text = ast.literal_eval(t_text)
+            yield self.tokenizer(text).split(' ')
+
+
 def preprocess(dataset_path, force=False):
     preprocessed_path = dataset_path + '.pp.pickle'
     if not force and os.path.isfile(preprocessed_path):
@@ -1044,28 +1072,12 @@ For tweet-level sentiment detection:
              ('tfidf', Pipeline([
                  ('selector', ItemExtractor('neg_tok')),
                  ('tfidf', TfidfVectorizer())])),
-             ('chk', Pipeline([
-                 ('selector', ItemExtractor('chk')),
-                 ('vect', CountVectorizer(binary=True))])),
-             ('ner', Pipeline([
-                 ('selector', ItemExtractor('ner')),
-                 ('vect', CountVectorizer(binary=True))])),
-                          
-             # ('bing_liu_lexicon', Pipeline([
-             #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_im_project_lexicon(bing_liu_lexicon))),
-             #     ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
-             #     ('convertion', DictVectorizer())])),
-             # ('mpqa_lexicon', Pipeline([
-             #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_im_project_lexicon(mpqa_lexicon))),
-             #     ('string_to_feature', ApplyFunction(make_string_to_feature('mpqa'))),
-             #     ('convertion', DictVectorizer())])),
-             # ('mpqa_plus_lexicon', Pipeline([
-             #     ('selector', ItemExtractor('tok')),
-             #     ('projection', ApplyFunction(make_im_project_lexicon(mpqa_plus_lexicon))),
-             #     ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
-             #     ('convertion', DictVectorizer())])),
+             # ('chk', Pipeline([
+             #     ('selector', ItemExtractor('chk')),
+             #     ('vect', CountVectorizer(binary=True))])),
+             # ('ner', Pipeline([
+             #     ('selector', ItemExtractor('ner')),
+             #     ('vect', CountVectorizer(binary=True))])),
              ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
