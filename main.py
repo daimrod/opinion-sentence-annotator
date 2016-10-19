@@ -120,7 +120,7 @@ class Dataset():
         self.sid = sid
 
 
-def read_dataset(ipath, separator='\t',
+def read_semeval_dataset(ipath, separator='\t',
                  ignore_not_available=True):
     """Return a dataset following sklearn format.
 
@@ -907,7 +907,7 @@ def preprocess(dataset_path, force=False):
 
     logger.info('Read dataset')
     logger.debug(dataset_path)
-    dataset = read_dataset(dataset_path)
+    dataset = read_semeval_dataset(dataset_path)
     logger.info('  Convert objective and neutral to objective/neutral')
     merge_classes(dataset.target_names,
                   ['objective',
