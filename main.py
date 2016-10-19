@@ -95,7 +95,8 @@ mpqa_lexicon_path = os.path.join(DATA_DIR, 'subjectivity_clues_hltemnlp05/subjcl
 
 mpqa_plus_lexicon_path = os.path.join(DATA_DIR, 'mpqa_plus_lex.xml')
 
-nrc_lexicon_path = os.path.join(DATA_DIR, 'NRC-Emotion-Lexicon-v0.92/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.txt.nodoc')
+nrc_emotion_lexicon_path = os.path.join(DATA_DIR, 'NRC-Emotion-Lexicon-v0.92/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.txt.nodoc')
+nrc_hashtag_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/unigrams-pmilexicon.txt')
 
 carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
 
@@ -302,7 +303,33 @@ def read_mpqa_plus(mpqa_path_plus):
     return ret
 
 
-def read_nrc(nrc_path):
+def read_nrc_hashtag(path):
+    """Return a dictionary of words with their scores.
+
+    Args:
+        path: Path to NRC Hashtag lexicon.
+
+    Returns:
+        Returns a dictionary of words with their scores.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            elements = line.split('\t')
+            if len(elements) != 4:
+                logger.error('Couldn\'t parse line')
+                logger.error(line)
+            else:
+                term, score, _, _ = elements
+                ret[term] = float(score)
+    return ret
+
+
+def read_nrc_emotion(nrc_path):
     """Return a dictionary of negative/positive words.
 
     Args:
@@ -337,11 +364,19 @@ def read_carnegie_clusters(path):
         IOError: An error occurred.
     """
     ret = {}
-    with codecs.open(path, 'r', 'utf-8') as ifile:
+    with open(path, 'rb') as ifile:
+        last_line = '#EMPTY#'
         for line in ifile:
-            line = line.strip()
-            cluster_id, word, count = line.split('\t')
-            ret[word] = cluster_id
+            line = line.strip().decode('utf-8')
+            elements = line.split('\t')
+            if len(elements) != 3:
+                logger.error("Couldn't read Carnegie clusters properly")
+                logger.error(last_line)
+                logger.error(elements)
+            else:
+                cluster_id, word, count = elements
+                ret[word] = cluster_id
+            last_line = line
     return ret
 
 
@@ -488,6 +523,33 @@ contexts.
             word = word + '_NEG'
         s_with_neg.append(word)
     return ' '.join(s_with_neg)
+
+
+def f_n_neg_context(s):
+    """Return the number of negated contexts.
+
+    Args:
+        s: A string.
+
+    Returns:
+        The number of negated contexts.
+
+    """
+    re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
+    re_end_ctxt = r"[.:;!?]+"
+    in_neg_ctxt = False
+    neg_ctxt_counted = False
+    n_neg_context = 0
+    for word in s.split(' '):
+        if re.search(re_end_ctxt, word, flags=re.IGNORECASE) and in_neg_ctxt:
+            in_neg_ctxt = False
+            neg_ctxt_counted = False
+        elif re.search(re_beg_ctxt, word, flags=re.IGNORECASE):
+            in_neg_ctxt = True
+            if not neg_ctxt_counted:
+                n_neg_context += 1
+            neg_ctxt_counted = True
+    return [n_neg_context]
 
 
 def f_all_caps(s):
@@ -696,7 +758,7 @@ def f_senna_multi(lst):
     return ret
 
 
-def make_f_project_lexicon(lexicon):
+def make_f_project_lexicon(lexicon, not_found='NOT_FOUND'):
     def f_project_lexicon(s):
         ret = []
         for word in s.split(' '):
@@ -704,7 +766,7 @@ def make_f_project_lexicon(lexicon):
             if word in lexicon:
                 ret.append(lexicon[word])
             else:
-                ret.append('NOT_FOUND')
+                ret.append(not_found)
         return ' '.join(ret)
     return f_project_lexicon
 
@@ -815,7 +877,7 @@ def test():
 
 
 def runNRCCanada(truncate=None, test_dataset=None):
-    '''Reimplementation of NRCCanada
+    """Reimplementation of NRCCanada
 
 http://www.saifmohammad.com/WebPages/Abstracts/NRC-SentimentAnalysis.htm
 
@@ -854,7 +916,7 @@ For tweet-level sentiment detection:
       for each part-of-speech tag, for hashtags, and for all-caps
       tokens.
 - word ngrams, character ngrams.
-    '''
+    """
     with open(preprocess(train_path, force=False), 'rb') as p_file:
         train = pickle.load(p_file)
 
@@ -862,7 +924,7 @@ For tweet-level sentiment detection:
         test = pickle.load(p_file)
 
     bing_liu_lexicon = read_bing_liu(bing_liu_lexicon_path['negative'], bing_liu_lexicon_path['positive'])
-    nrc_lexicon = read_nrc(nrc_lexicon_path)
+    nrc_emotion_lexicon = read_nrc_emotion(nrc_emotion_lexicon_path)
     mpqa_lexicon = read_mpqa(mpqa_lexicon_path)
     mpqa_plus_lexicon = read_mpqa_plus(mpqa_plus_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(carnegie_clusters_path)
@@ -876,44 +938,44 @@ For tweet-level sentiment detection:
              ('clusters', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('clusters', ApplyFunction(make_f_project_lexicon(carnegie_clusters))),
-                 ('string_to_feature', ApplyFunction(make_string_to_feature('carnegie_clusters')))
-                 ('convertion', DictVectorizer())])),
+                 #('string_to_feature', ApplyFunction(make_string_to_feature('carnegie_clusters'))),
+                 ('convertion', CountVectorizer(binary=True))])),
              ('elongated', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('elongated', ApplyFunction(f_elgongated_words))])),
              ('emoticons', Pipeline([
                  ('selector', ItemExtractor('tok')),
                  ('emoticons', ApplyFunction(f_emoticons))])),
-             ('vect', Pipeline([
-                 ('selector', ItemExtractor('neg_tok')),
+             ('hashtags', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('hashtags', ApplyFunction(f_n_hashtags))])),
+             ('negation', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('negation', ApplyFunction(f_n_neg_context))])),
+             ('pos', Pipeline([
+                 ('selector', ItemExtractor('pos')),
                  ('vect', CountVectorizer())])),
+             ('punctuation', Pipeline([
+                 ('selector', ItemExtractor('tok')),
+                 ('punctuation', ApplyFunction(f_punctuation))])),
              ('tfidf', Pipeline([
                  ('selector', ItemExtractor('neg_tok')),
                  ('tfidf', TfidfVectorizer())])),
-             ('pos', Pipeline([
-                 ('selector', ItemExtractor('pos')),
-                 ('vect', CountVectorizer(binary=True))])),
              ('chk', Pipeline([
                  ('selector', ItemExtractor('chk')),
                  ('vect', CountVectorizer(binary=True))])),
              ('ner', Pipeline([
                  ('selector', ItemExtractor('ner')),
                  ('vect', CountVectorizer(binary=True))])),
-             
-             ('syntax', Pipeline([
-                 ('selector', ItemExtractor('tok')),
-                 ('syntax', ApplyFunction(f_all_syntax))])),
-             ('twitter', Pipeline([
-                 ('selector', ItemExtractor('tok')),
-                 ('hashtags', ApplyFunction(f_n_hashtags))])),
+                          
              # ('bing_liu_lexicon', Pipeline([
              #     ('selector', ItemExtractor('tok')),
              #     ('projection', ApplyFunction(make_f_project_lexicon(bing_liu_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
              #     ('convertion', DictVectorizer())])),
-             ('nrc_lexicon', Pipeline([
+             ('nrc_emotion_lexicon', Pipeline([
                  ('selector', ItemExtractor('tok')),
-                 ('projection', ApplyFunction(make_f_project_lexicon(nrc_lexicon))),
+                 ('projection', ApplyFunction(make_f_project_lexicon(nrc_emotion_lexicon))),
                  ('string_to_feature', ApplyFunction(make_string_to_feature('bing_liu'))),
                  ('convertion', DictVectorizer())])),
              # ('mpqa_lexicon', Pipeline([
@@ -926,9 +988,6 @@ For tweet-level sentiment detection:
              #     ('projection', ApplyFunction(make_f_project_lexicon(mpqa_plus_lexicon))),
              #     ('string_to_feature', ApplyFunction(make_string_to_feature('lex'))),
              #     ('convertion', DictVectorizer())])),
-             ('punctuation', Pipeline([
-                 ('selector', ItemExtractor('tok')),
-                 ('punctuation', ApplyFunction(f_punctuation))])),
              ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
