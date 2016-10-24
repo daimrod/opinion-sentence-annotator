@@ -4,6 +4,7 @@
 import logging
 import codecs
 from lxml import etree
+import ast
 
 
 if 'logger' not in locals():
@@ -270,3 +271,65 @@ def read_carnegie_clusters(path):
                 ret[word] = cluster_id
             last_line = line
     return ret
+
+
+class TwitterLoggerTextReader(object):
+    """Read tweets as recorded by my twitter-logger project.
+
+    Tweets are saved using the following format :
+    ('id', u'ID')\t('text', u'TWEET')
+
+    Attributes:
+        filename: The path to the tweets.
+    """
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __iter__(self):
+        for line in codecs.open(self.filename, 'r', 'utf-8'):
+            line = line.strip()
+            elements = line.split('\t')
+            if len(elements) != 2:
+                logger.error('Incorrect formatting %s', line)
+                continue
+            _, t_text = elements
+            _, text = ast.literal_eval(t_text)
+            yield text
+
+
+class Tokenizer(object):
+    def __init__(self, iterable, tokenizer):
+        self.iterable = iterable
+        self.tokenizer = tokenizer
+
+    def __iter__(self):
+        for s in self.iterable:
+            yield self.tokenizer(s)
+
+
+class Splitter(object):
+    def __init__(self, iterable, split=' '):
+        self.iterable = iterable
+        self.split = split
+
+    def __iter__(self):
+        for s in self.iterable:
+            yield s.split(self.split)
+
+
+class LexiconProjecter(object):
+    """
+    """
+    def __init__(self, iterable, lexicon):
+        self.iterable = iterable
+        self.lexicon = lexicon
+
+    def __iter__(self):
+        for s in self.iterable:
+            new_s = []
+            for w in s:
+                if w in self.lexicon:
+                    new_s.append(self.lexicon[w])
+                else:
+                    new_s.append(w)
+            yield new_s

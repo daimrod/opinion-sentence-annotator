@@ -3,11 +3,8 @@
 
 import logging
 
-import codecs
-
 import pickle
 import os
-import ast
 
 import gensim
 
@@ -28,6 +25,10 @@ from reader import read_mpqa
 from reader import read_semeval_dataset
 from reader import read_nrc_hashtag
 from reader import read_nrc_emotion
+from reader import TwitterLoggerTextReader
+from reader import Tokenizer
+from reader import Splitter
+from reader import LexiconProjecter
 
 from utils import merge_classes
 from utils import pretty_pipeline
@@ -55,68 +56,6 @@ if 'logger' not in locals():
 
 
 ########## Pipeline
-class TwitterLoggerTextReader(object):
-    """Read tweets as recorded by my twitter-logger project.
-
-    Tweets are saved using the following format :
-    ('id', u'ID')\t('text', u'TWEET')
-
-    Attributes:
-        filename: The path to the tweets.
-    """
-    def __init__(self, filename):
-        self.filename = filename
-
-    def __iter__(self):
-        for line in codecs.open(self.filename, 'r', 'utf-8'):
-            line = line.strip()
-            elements = line.split('\t')
-            if len(elements) != 2:
-                logger.error('Incorrect formatting %s', line)
-                continue
-            _, t_text = elements
-            _, text = ast.literal_eval(t_text)
-            yield text
-
-
-class Tokenizer(object):
-    def __init__(self, iterable, tokenizer):
-        self.iterable = iterable
-        self.tokenizer = tokenizer
-
-    def __iter__(self):
-        for s in self.iterable:
-            yield self.tokenizer(s)
-
-
-class Splitter(object):
-    def __init__(self, iterable, split=' '):
-        self.iterable = iterable
-        self.split = split
-
-    def __iter__(self):
-        for s in self.iterable:
-            yield s.split(self.split)
-
-
-class LexiconProjecter(object):
-    """
-    """
-    def __init__(self, iterable, lexicon):
-        self.iterable = iterable
-        self.lexicon = lexicon
-
-    def __iter__(self):
-        for s in self.iterable:
-            new_s = []
-            for w in s:
-                if w in self.lexicon:
-                    new_s.append(self.lexicon[w])
-                else:
-                    new_s.append(w)
-            yield new_s
-
-
 def preprocess(dataset_path, force=False):
     preprocessed_path = dataset_path + '.pp.pickle'
     if not force and os.path.isfile(preprocessed_path):
@@ -161,9 +100,6 @@ def train():
 
 def test():
     pass
-
-
-N_JOBS = 5
 
 
 def runNRCCanada(train_truncate=None, test_truncate=None,
@@ -232,7 +168,7 @@ For tweet-level sentiment detection:
             ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
         ('clusters', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('clusters', feat.ApplyFunction(feat.make_im_project_lexicon(carnegie_clusters))),
+            ('clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(carnegie_clusters))),
             ('convertion', CountVectorizer(binary=True))])),
         ('elongated', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
@@ -254,16 +190,16 @@ For tweet-level sentiment detection:
             ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
         ('nrc_emotion_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_emotion_lexicon)))])),
         ('nrc_hashtag_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_lexicon)))])),
         ('bing_liu_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(bing_liu_lexicon)))])),
         ('mpqa_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(mpqa_lexicon)))])),
 
         ('word ngram', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
@@ -277,11 +213,10 @@ For tweet-level sentiment detection:
 
     logger.info('Train the pipeline')
     clf = Pipeline([
-        ('text_features', FeatureUnion(text_features,
-                                       n_jobs=N_JOBS)),
+        ('text_features', FeatureUnion(text_features)),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
-                              n_jobs=N_JOBS,
+                              n_jobs=5,
                               random_state=42))]).fit(train.data, train.target)
 
     logger.info('Classify test data')
@@ -313,8 +248,8 @@ def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
     text_features = [
         ('word2vec find closest', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
             ('use feature', DictVectorizer())]))]
 
     return runNRCCanada(train_truncate=train_truncate,
@@ -342,8 +277,8 @@ def runCustom0_with_SVD(train_truncate=None, test_truncate=None, test_dataset=No
     text_features = [
         ('word2vec find closest', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
             ('use feature', DictVectorizer()),
             ('SVD', TruncatedSVD(n_components=100))]))]
 
@@ -375,9 +310,44 @@ def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
     text_features = [
         ('word2vec find closest', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
             ('use feature', DictVectorizer())]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        test_dataset=test_dataset,
+                        new_text_features=text_features)
+
+
+def runCustom1_with_SVD(train_truncate=None,
+                        test_truncate=None,
+                        test_dataset=None):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
+    if os.path.exists(word2vec_path):
+        word2vec = gensim.models.Word2Vec.load(word2vec_path)
+    else:
+        logger.info('Train word2vec model')
+        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = Tokenizer(reader, feat.happyfuntokenizer)
+        reader = Splitter(reader)
+        reader = LexiconProjecter(reader, bing_liu_lexicon)
+        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+        word2vec.init_sims(replace=True)
+        word2vec.save(word2vec_path)
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
+            ('use feature', DictVectorizer()),
+            ('SVD', TruncatedSVD(n_components=100))]))]
 
     return runNRCCanada(train_truncate=train_truncate,
                         test_truncate=test_truncate,
