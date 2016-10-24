@@ -257,15 +257,9 @@ For tweet-level sentiment detection:
                  ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
 
 
-             ('tfidf', Pipeline([
-                 ('selector', feat.ItemExtractor('neg_tok')),
-                 ('tfidf', TfidfVectorizer())])),
-             # ('chk', Pipeline([
-             #     ('selector', feat.ItemExtractor('chk')),
-             #     ('vect', CountVectorizer(binary=True))])),
-             # ('ner', Pipeline([
-             #     ('selector', feat.ItemExtractor('ner')),
-             #     ('vect', CountVectorizer(binary=True))])),
+             ('word ngram', Pipeline([
+                 ('selector', feat.ItemExtractor('tok')),
+                 ('tfidf', CountVectorizer(binary=True, ngram_range=(1, 4)))])),
              ])),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
