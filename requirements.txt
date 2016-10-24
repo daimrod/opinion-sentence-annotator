@@ -1,0 +1,10 @@
+numpy
+sklearn
+gensym
+pickle
+lxml
+nltk
+scipy
+keras
+tensorflow
+theano
