@@ -19,6 +19,8 @@ from resources import happy_emoticons_path
 from resources import sad_emoticons_path
 from resources import SENNA_PATH
 
+import happyfuntokenizing
+from nltk.tokenize import TweetTokenizer
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -458,7 +460,9 @@ def f_senna_multi(lst):
     return ret
 
 
-def make_f_gensim_model(model):
+class F_Gensim_Model(object):
+    def __init__(self, model):
+        self.model = model
     """Make a feature generator with the given gensim model.
 
     Replace each words by its vector.
@@ -469,41 +473,49 @@ def make_f_gensim_model(model):
     Returns:
         A feature generator for the given model.
     """
-    def f_gensim_model(s):
+    def f_gensim_model(self, s):
         ret = []
         for word in s.split(' '):
             word = word.lower()
-            if word in model:
-                rep = model[word]
+            if word in self.model:
+                rep = self.model[word]
             else:
                 rep = [0] * 100
             ret.extend(rep)
         return ret
-    return f_gensim_model
+    __call__ = f_gensim_model
 
 
-def make_f_find_closest_in_lexicon(model, lexicon):
-    finder = FindClosestInLexicon(model, lexicon)
+class F_Find_Closest_In_Lexicon(object):
+    def __init__(self, model, lexicon):
+        self.model = model
+        self.lexicon = lexicon
+        self.finder = FindClosestInLexicon(model, lexicon)
 
-    def f_find_closest_in_lexicon(s):
+    def f_find_closest_in_lexicon(self, s):
         ret = []
         for word in s.split(' '):
-            ret.append(finder.find_closest_in_lexicon(word))
+            ret.append(self.finder.find_closest_in_lexicon(word))
         return ret
-    return f_find_closest_in_lexicon
+    __call__ = f_find_closest_in_lexicon
 
 
-def make_array_to_feature(prefix):
-    def array_to_feature(array_of_arrays):
+class Array_To_Feature(object):
+    def __init__(self, prefix):
+        self.prefix = prefix
+
+    def array_to_feature(self, array_of_arrays):
         ret = {}
         for (idx1, array) in enumerate(array_of_arrays):
             for (idx2, val) in enumerate(array):
-                ret['%s-%d-%d' % (prefix, idx1, idx2)] = val
+                ret['%s-%d-%d' % (self.prefix, idx1, idx2)] = val
         return ret
-    return array_to_feature
+    __call__ = array_to_feature
 
 
-def make_f_nrc_project_lexicon(lexicon):
+class F_NRC_Project_Lexicon(object):
+    def __init__(self, lexicon):
+        self.lexicon = lexicon
     """Make a feature generator with the given lexicon like NRC.
 
     For each lexicon and each polarity we calculated:
@@ -520,9 +532,9 @@ def make_f_nrc_project_lexicon(lexicon):
     Returns:
         A feature generator for the given lexicon.
     """
-    def word_to_score(lexicon, word):
-        if word in lexicon:
-            score = lexicon[word]
+    def word_to_score(self, word):
+        if word in self.lexicon:
+            score = self.lexicon[word]
             if score == 'positive':
                 score = 1
             elif score == 'negative':
@@ -538,7 +550,7 @@ def make_f_nrc_project_lexicon(lexicon):
             score = None
         return score
 
-    def f_nrc_project_lexicon(s):
+    def f_nrc_project_lexicon(self, s):
         total_pos = 0
         total_neg = 0
         max_pos = 0
@@ -546,8 +558,8 @@ def make_f_nrc_project_lexicon(lexicon):
         last_token_score = 0
         for word in s.split(' '):
             word = word.lower()
-            if word in lexicon:
-                score = word_to_score(lexicon, word)
+            if word in self.lexicon:
+                score = self.word_to_score(word)
                 if score is None:
                     continue
                 if score > 0:
@@ -559,7 +571,7 @@ def make_f_nrc_project_lexicon(lexicon):
                     total_neg += score
                     if score > max_neg:
                         max_neg = score
-        last_token_score = word_to_score(lexicon, s[-1])
+        last_token_score = self.word_to_score(s[-1])
         if last_token_score is None:
             last_token_score = 0
         return [total_pos,
@@ -568,21 +580,25 @@ def make_f_nrc_project_lexicon(lexicon):
                 max_pos,
                 max_neg,
                 last_token_score]
-    return f_nrc_project_lexicon
+    __call__ = f_nrc_project_lexicon
 
 
 ## Input Modifiers (IM)
-def make_im_project_lexicon(lexicon, not_found='NOT_FOUND'):
-    def im_project_lexicon(s):
+class IM_Project_Lexicon(object):
+    def __init__(self, lexicon, not_found='NOT_FOUND'):
+        self.lexicon = lexicon
+        self.not_found = not_found
+
+    def im_project_lexicon(self, s):
         ret = []
         for word in s.split(' '):
             word = word.lower()
-            if word in lexicon:
-                ret.append(lexicon[word])
+            if word in self.lexicon:
+                ret.append(self.lexicon[word])
             else:
-                ret.append(not_found)
+                ret.append(self.not_found)
         return ' '.join(ret)
-    return im_project_lexicon
+    __call__ = im_project_lexicon
 
 
 def im_neg_context(s):
@@ -612,8 +628,6 @@ contexts.
             word = word + '_NEG'
         s_with_neg.append(word)
     return ' '.join(s_with_neg)
-
-
 
 
 ##### Tokenizer
@@ -661,10 +675,13 @@ def string_to_feature(s, prefix):
     return f
 
 
-def make_string_to_feature(prefix):
-    def string_to_feature(s):
+class String_To_Feature(object):
+    def __init__(self, prefix):
+        self.prefix = prefix
+
+    def string_to_feature(self, s):
         f = {}
         for (idx, val) in enumerate(s.split()):
-            f['%s-%d' % (prefix, idx)] = val
+            f['%s-%d' % (self.prefix, idx)] = val
         return f
-    return string_to_feature
+    __call__ = string_to_feature
