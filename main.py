@@ -18,6 +18,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
+from sklearn.decomposition import TruncatedSVD
 
 from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
@@ -162,7 +163,11 @@ def test():
     pass
 
 
-def runNRCCanada(truncate=None, test_dataset=None):
+N_JOBS = 5
+
+
+def runNRCCanada(train_truncate=None, test_truncate=None,
+                 test_dataset=None, new_text_features=[]):
     """Reimplementation of NRCCanada
 
 http://www.saifmohammad.com/WebPages/Abstracts/NRC-SentimentAnalysis.htm
@@ -203,71 +208,80 @@ For tweet-level sentiment detection:
       tokens.
 - word ngrams, character ngrams.
     """
+    logger.info('Load the corpus')
     with open(preprocess(res.train_path, force=False), 'rb') as p_file:
         train = pickle.load(p_file)
 
     with open(preprocess(res.test_path, force=False), 'rb') as p_file:
         test = pickle.load(p_file)
+    train.truncate(train_truncate)
+    test.truncate(test_truncate)
 
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'], res.bing_liu_lexicon_path['positive'])
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
     nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
     nrc_hashtag_lexicon = read_nrc_hashtag(res.nrc_hashtag_lexicon_path)
     mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
+    logger.info('Build the pipeline')
+    text_features = [
+        ('all caps', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
+        ('clusters', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('clusters', feat.ApplyFunction(feat.make_im_project_lexicon(carnegie_clusters))),
+            ('convertion', CountVectorizer(binary=True))])),
+        ('elongated', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('elongated', feat.ApplyFunction(feat.f_elgongated_words))])),
+        ('emoticons', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),
+        ('hashtags', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
+        ('negation', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
+        ('pos', Pipeline([
+            ('selector', feat.ItemExtractor('pos')),
+            ('vect', CountVectorizer())])),
+        ('punctuation', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
+        ('nrc_emotion_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
+        ('nrc_hashtag_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
+        ('bing_liu_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
+        ('mpqa_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
+
+        ('word ngram', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('tfidf', CountVectorizer(binary=True,
+                                      ngram_range=(1, 4)))])),
+        ('char ngram', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('tfidf', CountVectorizer(binary=True, analyzer='char',
+                                      ngram_range=(3, 5)))]))]
+    text_features.extend(new_text_features)
+
     logger.info('Train the pipeline')
     clf = Pipeline([
-        ('text_features', FeatureUnion(
-            [('all caps', Pipeline([
-                ('selector', feat.ItemExtractor('tok')),
-                ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
-             ('clusters', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('clusters', feat.ApplyFunction(feat.make_im_project_lexicon(carnegie_clusters))),
-                 ('convertion', CountVectorizer(binary=True))])),
-             ('elongated', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('elongated', feat.ApplyFunction(feat.f_elgongated_words))])),
-             ('emoticons', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),
-             ('hashtags', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
-             ('negation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-             ('pos', Pipeline([
-                 ('selector', feat.ItemExtractor('pos')),
-                 ('vect', CountVectorizer())])),
-             ('punctuation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
-             ('nrc_emotion_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
-             ('nrc_hashtag_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
-             ('bing_liu_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
-             ('mpqa_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
-
-
-             ('word ngram', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('tfidf', CountVectorizer(binary=True,
-                                           ngram_range=(1, 4)))])),
-             ('char ngram', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('tfidf', CountVectorizer(binary=True, analyzer='char',
-                                           ngram_range=(3, 5)))])),
-             ])),
+        ('text_features', FeatureUnion(text_features,
+                                       n_jobs=N_JOBS)),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
+                              n_jobs=N_JOBS,
                               random_state=42))]).fit(train.data, train.target)
 
     logger.info('Classify test data')
@@ -283,22 +297,9 @@ For tweet-level sentiment detection:
 def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
     """
     """
-    logger.info('Load the training file')
-    with open(preprocess(res.train_path, force=False), 'rb') as p_file:
-        train = pickle.load(p_file)
-
-    logger.info('Load the testing file')
-    with open(preprocess(res.test_path, force=False), 'rb') as p_file:
-        test = pickle.load(p_file)
-    train.truncate(train_truncate)
-    test.truncate(test_truncate)
-
-    logger.info('Load the ressources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'], res.bing_liu_lexicon_path['positive'])
-    nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
-    nrc_hashtag_lexicon = read_nrc_hashtag(res.nrc_hashtag_lexicon_path)
-    mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
-    carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
     if os.path.exists(res.twitter_logger_en_path + '.word2vec'):
         word2vec = gensim.models.Word2Vec.load(res.twitter_logger_en_path + '.word2vec')
     else:
@@ -309,95 +310,55 @@ def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
         word2vec.init_sims(replace=True)
         word2vec.save(res.twitter_logger_en_path + '.word2vec')
 
-    logger.info('Train the pipeline')
-    clf = Pipeline([
-        ('text_features', FeatureUnion(
-            [('all caps', Pipeline([
-                ('selector', feat.ItemExtractor('tok')),
-                ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
-             ('clusters', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('clusters', feat.ApplyFunction(feat.make_im_project_lexicon(carnegie_clusters))),
-                 ('convertion', CountVectorizer(binary=True))])),
-             ('elongated', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('elongated', feat.ApplyFunction(feat.f_elgongated_words))])),
-             ('emoticons', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),
-             ('hashtags', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
-             ('negation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-             ('pos', Pipeline([
-                 ('selector', feat.ItemExtractor('pos')),
-                 ('vect', CountVectorizer())])),
-             ('punctuation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
-             ('nrc_emotion_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
-             ('nrc_hashtag_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
-             ('bing_liu_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
-             ('mpqa_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
-             ('word2vec find closest', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
-                 ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
-                 ('use feature', DictVectorizer())])),
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('use feature', DictVectorizer())]))]
 
-             ('tfidf', Pipeline([
-                 ('selector', feat.ItemExtractor('neg_tok')),
-                 ('tfidf', TfidfVectorizer())])),
-             # ('chk', Pipeline([
-             #     ('selector', feat.ItemExtractor('chk')),
-             #     ('vect', CountVectorizer(binary=True))])),
-             # ('ner', Pipeline([
-             #     ('selector', feat.ItemExtractor('ner')),
-             #     ('vect', CountVectorizer(binary=True))])),
-             ])),
-        ('clf', SGDClassifier(loss='hinge',
-                              n_iter=5,
-                              random_state=42))]).fit(train.data, train.target)
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        test_dataset=test_dataset,
+                        new_text_features=text_features)
 
-    logger.info('Classify test data')
-    predicted = clf.predict(test.data)
-    logger.info('Results')
-    logger.debug(pretty_pipeline(clf))
-    logger.info('\n' +
-                metrics.classification_report(test.target, predicted,
-                                              target_names=list(set(test.target_names))))
-    return clf
+
+def runCustom0_with_SVD(train_truncate=None, test_truncate=None, test_dataset=None):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    if os.path.exists(res.twitter_logger_en_path + '.word2vec'):
+        word2vec = gensim.models.Word2Vec.load(res.twitter_logger_en_path + '.word2vec')
+    else:
+        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = Tokenizer(reader, feat.happyfuntokenizer)
+        reader = Splitter(reader)
+        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+        word2vec.init_sims(replace=True)
+        word2vec.save(res.twitter_logger_en_path + '.word2vec')
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('use feature', DictVectorizer()),
+            ('SVD', TruncatedSVD(n_components=100))]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        test_dataset=test_dataset,
+                        new_text_features=text_features)
 
 
 def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
     """
     """
-    logger.info('Load the training file')
-    with open(preprocess(res.train_path, force=False), 'rb') as p_file:
-        train = pickle.load(p_file)
-
-    logger.info('Load the testing file')
-    with open(preprocess(res.test_path, force=False), 'rb') as p_file:
-        test = pickle.load(p_file)
-    train.truncate(train_truncate)
-    test.truncate(test_truncate)
-
-    logger.info('Load the ressources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'], res.bing_liu_lexicon_path['positive'])
-    nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
-    nrc_hashtag_lexicon = read_nrc_hashtag(res.nrc_hashtag_lexicon_path)
-    mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
-    carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
     word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
     if os.path.exists(word2vec_path):
         word2vec = gensim.models.Word2Vec.load(word2vec_path)
@@ -411,71 +372,14 @@ def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
         word2vec.init_sims(replace=True)
         word2vec.save(word2vec_path)
 
-    logger.info('Train the pipeline')
-    clf = Pipeline([
-        ('text_features', FeatureUnion(
-            [('all caps', Pipeline([
-                ('selector', feat.ItemExtractor('tok')),
-                ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
-             ('clusters', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('clusters', feat.ApplyFunction(feat.make_im_project_lexicon(carnegie_clusters))),
-                 ('convertion', CountVectorizer(binary=True))])),
-             ('elongated', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('elongated', feat.ApplyFunction(feat.f_elgongated_words))])),
-             ('emoticons', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),
-             ('hashtags', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
-             ('negation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-             ('pos', Pipeline([
-                 ('selector', feat.ItemExtractor('pos')),
-                 ('vect', CountVectorizer())])),
-             ('punctuation', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
-             ('nrc_emotion_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_emotion_lexicon)))])),
-             ('nrc_hashtag_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(nrc_hashtag_lexicon)))])),
-             ('bing_liu_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(bing_liu_lexicon)))])),
-             ('mpqa_lexicon', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('projection', feat.ApplyFunction(feat.make_f_nrc_project_lexicon(mpqa_lexicon)))])),
-             ('word2vec find closest', Pipeline([
-                 ('selector', feat.ItemExtractor('tok')),
-                 ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
-                 ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
-                 ('use feature', DictVectorizer())])),
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.make_f_find_closest_in_lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.make_array_to_feature('word2vec-closest'))),
+            ('use feature', DictVectorizer())]))]
 
-             ('tfidf', Pipeline([
-                 ('selector', feat.ItemExtractor('neg_tok')),
-                 ('tfidf', TfidfVectorizer())])),
-             # ('chk', Pipeline([
-             #     ('selector', feat.ItemExtractor('chk')),
-             #     ('vect', CountVectorizer(binary=True))])),
-             # ('ner', Pipeline([
-             #     ('selector', feat.ItemExtractor('ner')),
-             #     ('vect', CountVectorizer(binary=True))])),
-             ])),
-        ('clf', SGDClassifier(loss='hinge',
-                              n_iter=5,
-                              random_state=42))]).fit(train.data, train.target)
-
-    logger.info('Classify test data')
-    predicted = clf.predict(test.data)
-    logger.info('Results')
-    logger.debug(pretty_pipeline(clf))
-    logger.info('\n' +
-                metrics.classification_report(test.target, predicted,
-                                              target_names=list(set(test.target_names))))
-    return clf
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        test_dataset=test_dataset,
+                        new_text_features=text_features)
