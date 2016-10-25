@@ -33,6 +33,7 @@ from reader import LexiconProjecter
 from utils import merge_classes
 from utils import pretty_pipeline
 from utils import strings_to_integers
+from utils import eval_with_semeval_script
 
 import features as feat
 import resources as res
@@ -72,6 +73,7 @@ def preprocess(dataset_path, force=False):
                   'neutral')
     logger.info('  Build the target array')
     target, labels = strings_to_integers(dataset.target_names)
+    dataset.labels = labels
     dataset.target.extend(target)
 
     logger.info('Tokenize text')
@@ -226,7 +228,10 @@ For tweet-level sentiment detection:
     logger.info('\n' +
                 metrics.classification_report(test.target, predicted,
                                               target_names=list(set(test.target_names))))
-    return clf
+
+    logger.info('\n' +
+                eval_with_semeval_script(predicted, test))
+    return clf, predicted
 
 
 def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):

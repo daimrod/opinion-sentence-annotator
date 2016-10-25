@@ -4,6 +4,10 @@
 import logging
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
+import tempfile
+from subprocess import PIPE, Popen
+import os
+from resources import SEMEVAL_SCORER_PATH
 
 
 if 'logger' not in locals():
@@ -70,7 +74,26 @@ def strings_to_integers(strings):
     return integers, labels
 
 
+def integers_to_strings(integers, labels):
+    """Convert an array of integers to an array of strings using labels as
+reference.
+
+    Args:
+        integers: An array of integers.
+        labels: An array of strings where each integers will be
+        replaced by the string at the index.
+
+    Returns:
+        An array of strings.
+    """
+    strings = []
+    for integer in integers:
+        strings.append(labels[integer])
+    return strings
+
+
 def merge_classes(lst, classes, new_class):
+
     """Merge classes from lst into one new_class.
 
     Args:
@@ -85,3 +108,39 @@ def merge_classes(lst, classes, new_class):
         if lst[i] in classes:
             lst[i] = new_class
     return lst
+
+
+def eval_with_semeval_script(predicted, test):
+    """Eval prediction on test with semeval script (T4SA).
+
+    Args:
+        predicted: variable documentation.
+        test: variable documentation.
+
+    Returns:
+        Returns information
+
+    Raises:
+        IOError: An error occurred.
+    """
+    predicted = integers_to_strings(predicted, test.labels)
+    ofile = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+    ret = None
+    try:
+        for (sid, pred) in zip(test.sid, predicted):
+            ofile.write('%s\t%s\n' % (sid, pred))
+        ofile.close()
+        p = Popen(['_scripts/SemEval2016_task4_test_scorer_subtaskA.pl',
+                   ofile.name], stdout=PIPE, stderr=PIPE, cwd=SEMEVAL_SCORER_PATH)
+        out, err = p.communicate()
+        ret = out + err
+        ret = ret.decode()
+        with open(ofile.name + '.scored', 'r') as ifile:
+            for line in ifile:
+                ret += line
+    finally:
+        if not ofile.closed:
+            ofile.close()
+        os.remove(ofile.name)
+        os.remove(ofile.name + '.scored')
+    return ret

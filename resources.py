@@ -64,6 +64,8 @@ test_path = rouvier_test
 
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 
+SEMEVAL_SCORER_PATH = os.path.join(semeval16, 'Task4/SemEval2016_task4_submissions_and_scores/')
+
 ## Lexicons
 bing_liu_lexicon_path = dict({'negative': os.path.join(DATA_DIR, 'bing-liu-lexicon/negative-words.txt'),
                               'positive': os.path.join(DATA_DIR, 'bing-liu-lexicon/positive-words.txt')})

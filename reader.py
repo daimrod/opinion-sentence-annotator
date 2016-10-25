@@ -32,13 +32,15 @@ class Dataset():
                  filenames=[],
                  target_names=[],
                  target=[],
-                 uid=[], sid=[]):
+                 uid=[], sid=[],
+                 labels=[]):
         self.data = data
         self.filenames = filenames
         self.target_names = target_names
         self.target = target
         self.uid = uid
         self.sid = sid
+        self.labels = labels
 
     def truncate(self, n):
         self.data = self.data[:n]
