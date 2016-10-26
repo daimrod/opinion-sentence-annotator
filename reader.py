@@ -99,24 +99,23 @@ def read_semeval_dataset(ipath, separator='\t',
             if line:
                 try:
                     [sid, uid, polarity, text] = line.split(separator,
-                                                            maxsplit=4)
+                                                            maxsplit=3)
                     if ignore_not_available and text == 'Not Available':
                         continue
-                    dataset.sid.append(sid)
-                    dataset.uid.append(uid)
-                    dataset.target_names.append(polarity.replace('"', ''))
-                    dataset.data.append({'text': text})
                 except ValueError:
                     try:
                         [uid, polarity, text] = line.split(separator,
-                                                           maxsplit=3)
+                                                           maxsplit=2)
                         if ignore_not_available and text == 'Not Available':
                             continue
-                        dataset.uid.append(uid)
-                        dataset.target_names.append(polarity.replace('"', ''))
-                        dataset.data.append({'text': text})
+                        sid = None
                     except ValueError:
                         logging.warn('Couldn\'t parse line %s', line)
+                dataset.sid.append(sid)
+                dataset.uid.append(uid)
+                dataset.target_names.append(polarity.replace('"', ''))
+                dataset.data.append({'text': text})
+
     return dataset
 
 
