@@ -78,6 +78,7 @@ nrc_emotion_lexicon_path = os.path.join(DATA_DIR, 'NRC-Emotion-Lexicon-v0.92/NRC
 nrc_hashtag_unigram_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/unigrams-pmilexicon.txt')
 nrc_hashtag_sentimenthashtags_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/sentimenthashtags.txt')
 nrc_hashtag_bigram_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/bigrams-pmilexicon.txt')
+nrc_hashtag_pair_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/pairs-pmilexicon.txt')
 
 carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
 

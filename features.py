@@ -6,6 +6,7 @@ import logging
 from sklearn.base import BaseEstimator, TransformerMixin
 
 import functools
+import itertools
 import re
 import numbers
 import numpy
@@ -21,7 +22,7 @@ from resources import SENNA_PATH
 
 import happyfuntokenizing
 from nltk.tokenize import TweetTokenizer
-from nltk import ngrams
+import nltk
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -531,9 +532,20 @@ class F_NRC_Project_Lexicon(object):
     Returns:
         A feature generator for the given lexicon.
     """
-    def __init__(self, lexicon, ngrams=1):
+    def __init__(self, lexicon, ngrams=1, use_pair=False):
         self.lexicon = lexicon
         self.ngrams = ngrams
+        if use_pair:
+            self.get_items = self.get_pair_items
+
+    def get_items(self, s):
+        return [' '.join(item) for item in nltk.ngrams(s.split(' '), self.ngrams)]
+
+    def get_pair_items(self, s):
+        s = s.split(' ')
+        ngrams = itertools.chain(nltk.ngrams(s, 2), nltk.ngrams(s, 1))
+        for i1, i2 in itertools.combinations(ngrams, 2):
+            yield ' '.join(i1) + '---' + ' '.join(i2)
 
     def word_to_score(self, word):
         if word in self.lexicon:
@@ -559,11 +571,10 @@ class F_NRC_Project_Lexicon(object):
         max_pos = 0
         max_neg = 0
         last_token_score = 0
-        for word in ngrams(s.split(' '), self.ngrams):
-            word = ' '.join(word)
-            word = word.lower()
-            if word in self.lexicon:
-                score = self.word_to_score(word)
+        for item in self.get_items(s):
+            item = item.lower()
+            if item in self.lexicon:
+                score = self.word_to_score(item)
                 if score is None:
                     continue
                 if score > 0:

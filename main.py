@@ -15,6 +15,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
+from sklearn.preprocessing import Normalizer
 from sklearn.decomposition import TruncatedSVD
 
 from reader import Dataset  # We need this import because we're loading
@@ -25,6 +26,7 @@ from reader import read_mpqa
 from reader import read_semeval_dataset
 from reader import read_nrc_hashtag_unigram
 from reader import read_nrc_hashtag_bigram
+from reader import read_nrc_hashtag_pair
 from reader import read_nrc_hashtag_sentimenthashtags
 from reader import read_nrc_emotion
 from reader import TwitterLoggerTextReader
@@ -171,6 +173,7 @@ For tweet-level sentiment detection:
     nrc_hashtag_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_hashtag_unigram_lexicon_path)
     nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
     nrc_hashtag_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_hashtag_bigram_lexicon_path)
+    nrc_hashtag_pair_lexicon = read_nrc_hashtag_pair(res.nrc_hashtag_pair_lexicon_path)
     mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
@@ -210,6 +213,10 @@ For tweet-level sentiment detection:
         ('nrc_hashtag_bigram_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2)))])),
+        # This feature really drop the perfs
+        # ('nrc_hashtag_pair_lexicon', Pipeline([
+        #     ('selector', feat.ItemExtractor('tok')),
+        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
         ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon)))])),
@@ -233,6 +240,7 @@ For tweet-level sentiment detection:
     logger.info('Train the pipeline')
     clf = Pipeline([
         ('text_features', FeatureUnion(text_features)),
+        ('normalizer', Normalizer()),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
                               n_jobs=5,

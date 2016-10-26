@@ -267,6 +267,28 @@ def read_nrc_hashtag_bigram(path):
     return ret
 
 
+def read_nrc_hashtag_pair(path):
+    """Return a dictionary of pairs with their scores.
+
+    Args:
+        path: Path to NRC Hashtag Pairs lexicon.
+
+    Returns:
+        Returns a dictionary of pairs with their scores.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            elements = line.split('\t', maxsplit=3)
+            pair, score, _, _ = elements
+            ret[pair] = float(score)
+    return ret
+
+
 def read_nrc_emotion(nrc_path):
     """Return a dictionary of negative/positive words.
 
