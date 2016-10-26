@@ -23,7 +23,9 @@ from reader import read_bing_liu
 from reader import read_carnegie_clusters
 from reader import read_mpqa
 from reader import read_semeval_dataset
-from reader import read_nrc_hashtag
+from reader import read_nrc_hashtag_unigram
+from reader import read_nrc_hashtag_bigram
+from reader import read_nrc_hashtag_sentimenthashtags
 from reader import read_nrc_emotion
 from reader import TwitterLoggerTextReader
 
@@ -32,6 +34,7 @@ from reader import Splitter
 from reader import LexiconProjecter
 from reader import URLReplacer
 from reader import UserNameReplacer
+
 from utils import merge_classes
 from utils import pretty_pipeline
 from utils import strings_to_integers
@@ -165,7 +168,9 @@ For tweet-level sentiment detection:
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                      res.bing_liu_lexicon_path['positive'])
     nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
-    nrc_hashtag_lexicon = read_nrc_hashtag(res.nrc_hashtag_lexicon_path)
+    nrc_hashtag_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_hashtag_unigram_lexicon_path)
+    nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
+    nrc_hashtag_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_hashtag_bigram_lexicon_path)
     mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
@@ -199,9 +204,15 @@ For tweet-level sentiment detection:
         ('nrc_emotion_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_emotion_lexicon)))])),
-        ('nrc_hashtag_lexicon', Pipeline([
+        ('nrc_hashtag_unigram_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_lexicon)))])),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_unigram_lexicon)))])),
+        ('nrc_hashtag_bigram_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2)))])),
+        ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon)))])),
         ('bing_liu_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(bing_liu_lexicon)))])),

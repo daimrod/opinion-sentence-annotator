@@ -75,7 +75,9 @@ mpqa_lexicon_path = os.path.join(DATA_DIR, 'subjectivity_clues_hltemnlp05/subjcl
 mpqa_plus_lexicon_path = os.path.join(DATA_DIR, 'mpqa_plus_lex.xml')
 
 nrc_emotion_lexicon_path = os.path.join(DATA_DIR, 'NRC-Emotion-Lexicon-v0.92/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.txt.nodoc')
-nrc_hashtag_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/unigrams-pmilexicon.txt')
+nrc_hashtag_unigram_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/unigrams-pmilexicon.txt')
+nrc_hashtag_sentimenthashtags_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/sentimenthashtags.txt')
+nrc_hashtag_bigram_lexicon_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentiment-Lexicon-v0.1/bigrams-pmilexicon.txt')
 
 carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
 

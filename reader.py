@@ -198,11 +198,32 @@ def read_mpqa_plus(mpqa_path_plus):
     return ret
 
 
-def read_nrc_hashtag(path):
+def read_nrc_hashtag_sentimenthashtags(path):
     """Return a dictionary of words with their scores.
 
     Args:
-        path: Path to NRC Hashtag lexicon.
+        path: Path to NRC Sentiment Hashtag lexicon.
+
+    Returns:
+        Returns a dictionary of words with their scores.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            word, polarity = line.split(maxsplit=1)
+            ret[word] = polarity
+    return ret
+
+
+def read_nrc_hashtag_unigram(path):
+    """Return a dictionary of words with their scores.
+
+    Args:
+        path: Path to NRC Hashtag Unigram lexicon.
 
     Returns:
         Returns a dictionary of words with their scores.
@@ -221,6 +242,28 @@ def read_nrc_hashtag(path):
             else:
                 term, score, _, _ = elements
                 ret[term] = float(score)
+    return ret
+
+
+def read_nrc_hashtag_bigram(path):
+    """Return a dictionary of bigrams with their scores.
+
+    Args:
+        path: Path to NRC Hashtag Bigram lexicon.
+
+    Returns:
+        Returns a dictionary of bigrams with their scores.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            elements = line.split('\t', maxsplit=3)
+            bigram, score, _, _ = elements
+            ret[bigram] = float(score)
     return ret
 
 
