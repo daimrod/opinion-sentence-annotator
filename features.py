@@ -21,6 +21,7 @@ from resources import SENNA_PATH
 
 import happyfuntokenizing
 from nltk.tokenize import TweetTokenizer
+from nltk import ngrams
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -514,8 +515,6 @@ class Array_To_Feature(object):
 
 
 class F_NRC_Project_Lexicon(object):
-    def __init__(self, lexicon):
-        self.lexicon = lexicon
     """Make a feature generator with the given lexicon like NRC.
 
     For each lexicon and each polarity we calculated:
@@ -532,6 +531,10 @@ class F_NRC_Project_Lexicon(object):
     Returns:
         A feature generator for the given lexicon.
     """
+    def __init__(self, lexicon, ngrams=1):
+        self.lexicon = lexicon
+        self.ngrams = ngrams
+
     def word_to_score(self, word):
         if word in self.lexicon:
             score = self.lexicon[word]
@@ -556,7 +559,8 @@ class F_NRC_Project_Lexicon(object):
         max_pos = 0
         max_neg = 0
         last_token_score = 0
-        for word in s.split(' '):
+        for word in ngrams(s.split(' '), self.ngrams):
+            word = ' '.join(word)
             word = word.lower()
             if word in self.lexicon:
                 score = self.word_to_score(word)
