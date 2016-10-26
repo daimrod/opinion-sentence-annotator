@@ -26,10 +26,12 @@ from reader import read_semeval_dataset
 from reader import read_nrc_hashtag
 from reader import read_nrc_emotion
 from reader import TwitterLoggerTextReader
+
 from reader import Tokenizer
 from reader import Splitter
 from reader import LexiconProjecter
-
+from reader import URLReplacer
+from reader import UserNameReplacer
 from utils import merge_classes
 from utils import pretty_pipeline
 from utils import strings_to_integers
@@ -240,15 +242,18 @@ def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
     logger.info('Load the resources')
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                      res.bing_liu_lexicon_path['positive'])
-    if os.path.exists(res.twitter_logger_en_path + '.word2vec'):
-        word2vec = gensim.models.Word2Vec.load(res.twitter_logger_en_path + '.word2vec')
+    word2vec_path = res.twitter_logger_en_path + '.word2vec'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load(word2vec_path)
     else:
         reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = URLReplacer(reader)
+        reader = UserNameReplacer(reader)
         reader = Tokenizer(reader, feat.happyfuntokenizer)
         reader = Splitter(reader)
         word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
         word2vec.init_sims(replace=True)
-        word2vec.save(res.twitter_logger_en_path + '.word2vec')
+        word2vec.save(word2vec_path)
 
     text_features = [
         ('word2vec find closest', Pipeline([
@@ -269,15 +274,18 @@ def runCustom0_with_SVD(train_truncate=None, test_truncate=None, test_dataset=No
     logger.info('Load the resources')
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                      res.bing_liu_lexicon_path['positive'])
-    if os.path.exists(res.twitter_logger_en_path + '.word2vec'):
-        word2vec = gensim.models.Word2Vec.load(res.twitter_logger_en_path + '.word2vec')
+    word2vec_path = res.twitter_logger_en_path + '.word2vec'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load(word2vec_path)
     else:
         reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = URLReplacer(reader)
+        reader = UserNameReplacer(reader)
         reader = Tokenizer(reader, feat.happyfuntokenizer)
         reader = Splitter(reader)
         word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
         word2vec.init_sims(replace=True)
-        word2vec.save(res.twitter_logger_en_path + '.word2vec')
+        word2vec.save(word2vec_path)
 
     text_features = [
         ('word2vec find closest', Pipeline([
@@ -300,11 +308,13 @@ def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                      res.bing_liu_lexicon_path['positive'])
     word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
-    if os.path.exists(word2vec_path):
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
         word2vec = gensim.models.Word2Vec.load(word2vec_path)
     else:
         logger.info('Train word2vec model')
         reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = URLReplacer(reader)
+        reader = UserNameReplacer(reader)
         reader = Tokenizer(reader, feat.happyfuntokenizer)
         reader = Splitter(reader)
         reader = LexiconProjecter(reader, bing_liu_lexicon)
@@ -334,11 +344,13 @@ def runCustom1_with_SVD(train_truncate=None,
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                      res.bing_liu_lexicon_path['positive'])
     word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
-    if os.path.exists(word2vec_path):
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
         word2vec = gensim.models.Word2Vec.load(word2vec_path)
     else:
         logger.info('Train word2vec model')
         reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+        reader = URLReplacer(reader)
+        reader = UserNameReplacer(reader)
         reader = Tokenizer(reader, feat.happyfuntokenizer)
         reader = Splitter(reader)
         reader = LexiconProjecter(reader, bing_liu_lexicon)

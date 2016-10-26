@@ -5,6 +5,7 @@ import logging
 import codecs
 from lxml import etree
 import ast
+import re
 
 
 if 'logger' not in locals():
@@ -335,3 +336,40 @@ class LexiconProjecter(object):
                 else:
                     new_s.append(w)
             yield new_s
+
+
+class FuzzyOpinionRecognizer(object):
+    def __init__(self, iterable, positives, negatives):
+        self.iterable = iterable
+        self.positives = positives
+        self.negatives = negatives
+
+    def __iter__(self):
+        for s in self.iterable:
+            for token in s:
+                if token in self.positives:
+                    yield [s, 'positives']
+                    break
+                elif token in self.negatives:
+                    yield [s, 'negatives']
+                    break
+            else:
+                continue
+
+
+class URLReplacer(object):
+    def __init__(self, iterable):
+        self.iterable = iterable
+
+    def __iter__(self):
+        for s in self.iterable:
+            yield re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '#URL', s)
+
+
+class UserNameReplacer(object):
+    def __init__(self, iterable):
+        self.iterable = iterable
+
+    def __iter__(self):
+        for s in self.iterable:
+            yield re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)', '@USER', s)
