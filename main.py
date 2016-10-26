@@ -78,9 +78,13 @@ def preprocess(dataset_path, force=False):
     dataset.labels = labels
     dataset.target.extend(target)
 
-    logger.info('Tokenize text')
-    for d in dataset.data:
-        d['tok'] = feat.happyfuntokenizer(d['text'])
+    logger.info('Normalize and tokenize the text')
+    generator = (d['text'] for d in dataset.data)
+    preprocessor = URLReplacer(generator)
+    preprocessor = UserNameReplacer(preprocessor)
+    preprocessor = Tokenizer(preprocessor, feat.happyfuntokenizer)
+    for (d, tok) in zip(dataset.data, preprocessor):
+        d['tok'] = tok
 
     logger.info('Extract Senna features')
     senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
