@@ -253,11 +253,11 @@ For tweet-level sentiment detection:
     logger.debug(pretty_pipeline(clf))
     logger.info('\n' +
                 metrics.classification_report(test.target, predicted,
-                                              target_names=list(set(test.target_names))))
+                                              target_names=test.labels))
 
     try:
         logger.info('\n' +
-                    eval_with_semeval_script(predicted, test))
+                    eval_with_semeval_script(test, predicted))
     except:
         pass
     return clf, predicted

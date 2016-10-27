@@ -109,12 +109,12 @@ def merge_classes(lst, classes, new_class):
     return lst
 
 
-def eval_with_semeval_script(predicted, test):
+def eval_with_semeval_script(test, predicted):
     """Eval prediction on test with semeval script (T4SA).
 
     Args:
-        predicted: variable documentation.
         test: variable documentation.
+        predicted: variable documentation.
 
     Returns:
         Returns information
