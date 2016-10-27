@@ -109,14 +109,6 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
     return preprocessed_path
 
 
-def train():
-    pass
-
-
-def test():
-    pass
-
-
 def runNRCCanada(train_truncate=None, test_truncate=None,
                  only_uid=None, new_text_features=[],
                  repreprocess=False):
