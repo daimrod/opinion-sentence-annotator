@@ -64,7 +64,7 @@ if 'logger' not in locals():
 
 
 ########## Pipeline
-def preprocess(dataset_path, force=False):
+def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutral']):
     preprocessed_path = dataset_path + '.pp.pickle'
     if not force and os.path.isfile(preprocessed_path):
         return preprocessed_path
@@ -79,8 +79,8 @@ def preprocess(dataset_path, force=False):
                    'objective-OR-neutral'],
                   'neutral')
     logger.info('  Build the target array')
-    target, labels = strings_to_integers(dataset.target_names)
     dataset.labels = labels
+    target = strings_to_integers(dataset.target_names, labels)
     dataset.target.extend(target)
 
     logger.info('Normalize and tokenize the text')

@@ -55,7 +55,7 @@ def pretty_pipeline(obj):
         return obj
 
 
-def strings_to_integers(strings):
+def strings_to_integers(strings, labels):
     """Convert an array of strings to an array of integers.
 
     Convert an array of strings to an array of integers where the same
@@ -67,11 +67,10 @@ def strings_to_integers(strings):
     Returns:
         An array of integers
     """
-    labels = list(set(strings))
     integers = []
     for string in strings:
         integers.append(labels.index(string))
-    return integers, labels
+    return integers
 
 
 def integers_to_strings(integers, labels):
