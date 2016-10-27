@@ -189,44 +189,50 @@ class FindClosestInLexicon(object):
 
 
 ## Features generators
-def f_emoticons(s):
-    """Return informations about emoticons.
+class F_Emoticons(object):
+    def __init__(self):
+        happy_set = set()
+        sad_set = set()
+        with codecs.open(happy_emoticons_path, 'r', 'utf-8') as ifile:
+            for line in ifile:
+                emoticon = line.strip()
+                happy_set.add(emoticon)
+        with codecs.open(sad_emoticons_path, 'r', 'utf-8') as ifile:
+            for line in ifile:
+                emoticon = line.strip()
 
-    - presence/absence of positive and negative emoticons at any
-      position in the tweet;
-    - whether the last token is a positive or negative emoticon;
+        self.happy_set = happy_set
+        self.sad_set = sad_set
 
-    Args:
-        s: variable documentation.
+    def f_emoticons(self, s):
+        """Return informations about emoticons.
 
-    Returns:
-        A vector representation of emoticons information in s.
-    """
-    happy_set = set()
-    sad_set = set()
-    with codecs.open(happy_emoticons_path, 'r', 'utf-8') as ifile:
-        for line in ifile:
-            emoticon = line.strip()
-            happy_set.add(emoticon)
-    with codecs.open(sad_emoticons_path, 'r', 'utf-8') as ifile:
-        for line in ifile:
-            emoticon = line.strip()
-            sad_set.add(emoticon)
-    has_happy = False
-    has_sad = False
-    for word in s.split(' '):
-        if word in happy_set:
-            has_happy = True
-        elif word in sad_set:
-            has_sad = True
+        - presence/absence of positive and negative emoticons at any
+          position in the tweet;
+        - whether the last token is a positive or negative emoticon;
 
-    if s[-1] in happy_set:
-        last_tok = 1
-    elif s[-1] in sad_set:
-        last_tok = -1
-    else:
-        last_tok = 0
-    return [has_happy, has_sad, last_tok]
+        Args:
+            s: variable documentation.
+
+        Returns:
+            A vector representation of emoticons information in s.
+        """
+        has_happy = False
+        has_sad = False
+        for word in s.split(' '):
+            if word in self.happy_set:
+                has_happy = True
+            elif word in self.sad_set:
+                has_sad = True
+
+        if s[-1] in self.happy_set:
+            last_tok = 1
+        elif s[-1] in self.sad_set:
+            last_tok = -1
+        else:
+            last_tok = 0
+        return [has_happy * 1, has_sad * 1, last_tok]
+    __call__ = f_emoticons
 
 
 def f_n_neg_context(s):
@@ -546,6 +552,8 @@ class F_NRC_Project_Lexicon(object):
             yield ' '.join(i1) + '---' + ' '.join(i2)
 
     def word_to_score(self, word):
+        has_neg = '_NEG' in word
+        word = re.sub('_NEG', '', word)
         if word in self.lexicon:
             score = self.lexicon[word]
             if score == 'positive':
@@ -561,37 +569,50 @@ class F_NRC_Project_Lexicon(object):
                 score = None
         else:
             score = None
+        if has_neg:
+            score = -score
         return score
 
     def f_nrc_project_lexicon(self, s):
+        n_pos = 0
+        n_neg = 0
         total_pos = 0
         total_neg = 0
         max_pos = 0
         max_neg = 0
+        last_scored_token = 0
         last_token_score = 0
         for item in self.get_items(s):
             item = item.lower()
+            score = 0
             if item in self.lexicon:
                 score = self.word_to_score(item)
                 if score is None:
                     continue
                 if score > 0:
+                    n_pos += 1
                     total_pos += score
                     if score > max_pos:
                         max_pos = score
                 else:
+                    n_neg += 1
                     score = -score
                     total_neg += score
                     if score > max_neg:
                         max_neg = score
+            if score != 0:
+                last_scored_token = score
         last_token_score = self.word_to_score(s[-1])
         if last_token_score is None:
             last_token_score = 0
-        return [total_pos,
+        return [n_pos,
+                n_neg,
+                total_pos,
                 total_neg,
                 total_pos - total_neg,
                 max_pos,
                 max_neg,
+                last_scored_token,
                 last_token_score]
     __call__ = f_nrc_project_lexicon
 

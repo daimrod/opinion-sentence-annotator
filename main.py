@@ -93,12 +93,12 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
     for (d, tok) in zip(dataset.data, preprocessor):
         d['tok'] = tok
 
-    logger.info('Extract Senna features')
-    senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
-    for idx in range(len(dataset.data)):
-        dataset.data[idx]['pos'] = senna[idx]['pos']
-        dataset.data[idx]['chk'] = senna[idx]['chk']
-        dataset.data[idx]['ner'] = senna[idx]['ner']
+    # logger.info('Extract Senna features')
+    # senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
+    # for idx in range(len(dataset.data)):
+    #     dataset.data[idx]['pos'] = senna[idx]['pos']
+    #     dataset.data[idx]['chk'] = senna[idx]['chk']
+    #     dataset.data[idx]['ner'] = senna[idx]['ner']
 
     logger.info('Identify negated contexts')
     for d in dataset.data:
@@ -173,9 +173,13 @@ For tweet-level sentiment detection:
                                      res.bing_liu_lexicon_path['positive'])
     nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
     nrc_hashtag_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_hashtag_unigram_lexicon_path)
-    nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
     nrc_hashtag_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_hashtag_bigram_lexicon_path)
     nrc_hashtag_pair_lexicon = read_nrc_hashtag_pair(res.nrc_hashtag_pair_lexicon_path)
+    nrc_sentiment140_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_sentiment140_unigram_lexicon_path)
+    nrc_sentiment140_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_sentiment140_bigram_lexicon_path)
+    nrc_sentiment140_pair_lexicon = read_nrc_hashtag_pair(res.nrc_sentiment140_pair_lexicon_path)
+    nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
+
     mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
     carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
@@ -184,59 +188,85 @@ For tweet-level sentiment detection:
         ('all caps', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
-        ('clusters', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(carnegie_clusters))),
-            ('convertion', CountVectorizer(binary=True))])),
         ('elongated', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('elongated', feat.ApplyFunction(feat.f_elongated_words))])),
         ('emoticons', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),
+            ('emoticons', feat.ApplyFunction(feat.F_Emoticons()))])),
         ('hashtags', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
         ('negation', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-        ('pos', Pipeline([
-            ('selector', feat.ItemExtractor('pos')),
-            ('vect', CountVectorizer())])),
+        # ('pos', Pipeline([
+        #     ('selector', feat.ItemExtractor('pos')),
+        #     ('vect', CountVectorizer())])),
         ('punctuation', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
+            ('selector', feat.ItemExtractor('text')),
             ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
-        ('nrc_emotion_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_emotion_lexicon)))])),
-        ('nrc_hashtag_unigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_unigram_lexicon)))])),
-        ('nrc_hashtag_bigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2)))])),
-        # This feature really drop the perfs
-        # ('nrc_hashtag_pair_lexicon', Pipeline([
-        #     ('selector', feat.ItemExtractor('tok')),
-        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
-        ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon)))])),
-        ('bing_liu_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(bing_liu_lexicon)))])),
-        ('mpqa_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(mpqa_lexicon)))])),
 
-        ('word ngram', Pipeline([
+        # Manually constructed lexicons
+        ('nrc_emotion_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok_neg')),
-            ('count', CountVectorizer(binary=True,
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_emotion_lexicon))),
+            ])),
+        ('bing_liu_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(bing_liu_lexicon))),
+        ])),
+        ('mpqa_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(mpqa_lexicon))),
+        ])),
+
+        # Automatically constructed lexicons
+        ('nrc_hashtag_unigram_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_unigram_lexicon))),
+            ])),
+        ('nrc_hashtag_bigram_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2))),
+            ])),
+        ('nrc_hashtag_pair_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True))),
+            ## This feature really drop the perfs without normalization
+            ('normalizer', Normalizer())
+        ])),
+        # ('nrc_sentiment140_unigram_lexicon', Pipeline([
+        #     ('selector', feat.ItemExtractor('tok_neg')),
+        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_unigram_lexicon))),
+        #     ])),
+        # ('nrc_sentiment140_bigram_lexicon', Pipeline([
+        #     ('selector', feat.ItemExtractor('tok_neg')),
+        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_bigram_lexicon, ngrams=2))),
+        #     ])),
+        # ('nrc_sentiment140_pair_lexicon', Pipeline([
+        #     ('selector', feat.ItemExtractor('tok_neg')),
+        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_pair_lexicon, use_pair=True))),
+        #     ## This feature really drop the perfs without normalization
+        #     ('normalizer', Normalizer())
+        # ])),
+        ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon))),
+])),
+        ('clusters', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(carnegie_clusters))),
+            ('convertion', CountVectorizer(binary=True))])),
+        ('word ngram', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('count', CountVectorizer(binary=True, lowercase=True,
                                       ngram_range=(1, 4)))])),
         ('char ngram', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('count', CountVectorizer(binary=True, analyzer='char',
-                                      ngram_range=(3, 5)))]))]
+            ('selector', feat.ItemExtractor('text')),
+            ('count', CountVectorizer(binary=True, analyzer='char', lowercase=True,
+                                      ngram_range=(3, 5)))]))
+    ]
     text_features.extend(new_text_features)
 
     logger.info('Train the pipeline')
@@ -246,7 +276,7 @@ For tweet-level sentiment detection:
     #     ('clf', SVC(C=0.005, kernel='linear', max_iter=10000000))]).fit(train.data, train.target)
     clf = Pipeline([
         ('text_features', FeatureUnion(text_features)),
-        ('normalizer', Normalizer()),
+        #('normalizer', Normalizer()),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=5,
                               n_jobs=5,
@@ -265,7 +295,7 @@ For tweet-level sentiment detection:
                     eval_with_semeval_script(test, predicted))
     except:
         pass
-    return clf, predicted
+    return clf, predicted, text_features
 
 
 def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
