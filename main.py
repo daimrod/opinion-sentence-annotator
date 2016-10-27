@@ -100,7 +100,7 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
     logger.info('Identify negated contexts')
     for d in dataset.data:
-        d['neg_tok'] = feat.im_neg_context(d['tok'])
+        d['tok_neg'] = feat.im_neg_context(d['tok'])
 
     with open(preprocessed_path, 'wb') as p_file:
         pickle.dump(dataset, p_file)
@@ -228,7 +228,7 @@ For tweet-level sentiment detection:
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(mpqa_lexicon)))])),
 
         ('word ngram', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
+            ('selector', feat.ItemExtractor('tok_neg')),
             ('tfidf', CountVectorizer(binary=True,
                                       ngram_range=(1, 4)))])),
         ('char ngram', Pipeline([
