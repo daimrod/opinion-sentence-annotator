@@ -310,28 +310,26 @@ def f_punctuation(s):
     continuous_quest = 0
     continuous_excl_quest = 0
 
-    for word in s.split(' '):
-        excl_flag = 0
-        quest_flag = 0
-        excl_quest_flag = 0
-        for char in word:
-            if char == '!':
-                excl_flag += 1
-            else:
-                excl_flag = 0
-            if char == '?':
-                quest_flag += 1
-            else:
-                quest_flag = 0
-            if char == '!' or char == '?':
-                excl_quest_flag += 1
-            else:
-                excl_quest_flag = 0
+    excl_flag = 0
+    quest_flag = 0
+    excl_quest_flag = 0
+    for char in s:
+        if char == '!':
+            excl_flag += 1
         else:
             if excl_flag > 1:
                 continuous_excl += 1
+            excl_flag = 0
+        if char == '?':
             if quest_flag > 1:
                 continuous_quest += 1
+            quest_flag += 1
+        else:
+            quest_flag = 0
+        if char == '!' or char == '?':
+            excl_quest_flag += 1
+        else:
+            excl_quest_flag = 0
             if excl_quest_flag > 1:
                 continuous_excl_quest += 1
     last_word = s.split(' ')[-1]
