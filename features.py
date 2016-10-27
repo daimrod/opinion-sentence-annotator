@@ -646,7 +646,7 @@ contexts.
 
 
 ##### Tokenizer
-def happyfuntokenizer(s):
+def happyfuntokenizer(s, preserve_case=True):
     """Tokenize a string with happyfuntokenizing.py.
 
     Args:
@@ -655,7 +655,7 @@ def happyfuntokenizer(s):
     Returns:
         The string tokenized.
     """
-    tok = happyfuntokenizing.Tokenizer()
+    tok = happyfuntokenizing.Tokenizer(preserve_case=preserve_case)
     return ' '.join(tok.tokenize(s))
 
 
