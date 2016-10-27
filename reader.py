@@ -6,6 +6,7 @@ import codecs
 from lxml import etree
 import ast
 import re
+import itertools
 
 
 if 'logger' not in locals():
@@ -50,6 +51,34 @@ class Dataset():
         self.target = self.target[:n]
         self.uid = self.uid[:n]
         self.sid = self.sid[:n]
+
+    def filter_uid(self, val):
+        iterable = itertools.zip_longest(self.data,
+                                         self.filenames,
+                                         self.target_names,
+                                         self.target,
+                                         self.uid,
+                                         self.sid)
+        new_data = []
+        new_filenames = []
+        new_target_names = []
+        new_target = []
+        new_uid = []
+        new_sid = []
+        for data, filename, target_name, target, uid, sid in iterable:
+            if uid == val:
+                new_data.append(data)
+                new_filenames.append(filename)
+                new_target_names.append(target_name)
+                new_target.append(target)
+                new_uid.append(uid)
+                new_sid.append(sid)
+        self.data = new_data
+        self.filenames = new_filenames
+        self.target_names = new_target_names
+        self.target = new_target
+        self.uid = new_uid
+        self.sid = new_sid
 
 
 def read_semeval_dataset(ipath, separator='\t',

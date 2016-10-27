@@ -12,6 +12,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import SGDClassifier
+from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
@@ -116,7 +118,8 @@ def test():
 
 
 def runNRCCanada(train_truncate=None, test_truncate=None,
-                 test_dataset=None, new_text_features=[]):
+                 only_uid=None, new_text_features=[],
+                 repreprocess=False):
     """Reimplementation of NRCCanada
 
 http://www.saifmohammad.com/WebPages/Abstracts/NRC-SentimentAnalysis.htm
@@ -158,13 +161,15 @@ For tweet-level sentiment detection:
 - word ngrams, character ngrams.
     """
     logger.info('Load the corpus')
-    with open(preprocess(res.train_path, force=False), 'rb') as p_file:
+    with open(preprocess(res.train_path, force=repreprocess), 'rb') as p_file:
         train = pickle.load(p_file)
 
-    with open(preprocess(res.test_path, force=False), 'rb') as p_file:
+    with open(preprocess(res.test_path, force=repreprocess), 'rb') as p_file:
         test = pickle.load(p_file)
     train.truncate(train_truncate)
     test.truncate(test_truncate)
+    if only_uid is not None:
+        test.filter_uid(only_uid)
 
     logger.info('Load the resources')
     bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
@@ -214,9 +219,9 @@ For tweet-level sentiment detection:
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2)))])),
         # This feature really drop the perfs
-        # ('nrc_hashtag_pair_lexicon', Pipeline([
-        #     ('selector', feat.ItemExtractor('tok')),
-        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
+        ('nrc_hashtag_pair_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
         ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon)))])),
@@ -238,6 +243,10 @@ For tweet-level sentiment detection:
     text_features.extend(new_text_features)
 
     logger.info('Train the pipeline')
+    # clf = Pipeline([
+    #     ('text_features', FeatureUnion(text_features)),
+    #     ('normalizer', Normalizer()),
+    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=10000000))]).fit(train.data, train.target)
     clf = Pipeline([
         ('text_features', FeatureUnion(text_features)),
         ('normalizer', Normalizer()),
@@ -254,8 +263,11 @@ For tweet-level sentiment detection:
                 metrics.classification_report(test.target, predicted,
                                               target_names=list(set(test.target_names))))
 
-    logger.info('\n' +
-                eval_with_semeval_script(predicted, test))
+    try:
+        logger.info('\n' +
+                    eval_with_semeval_script(predicted, test))
+    except:
+        pass
     return clf, predicted
 
 
