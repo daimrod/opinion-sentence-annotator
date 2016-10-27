@@ -190,7 +190,7 @@ For tweet-level sentiment detection:
             ('convertion', CountVectorizer(binary=True))])),
         ('elongated', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('elongated', feat.ApplyFunction(feat.f_elgongated_words))])),
+            ('elongated', feat.ApplyFunction(feat.f_elongated_words))])),
         ('emoticons', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('emoticons', feat.ApplyFunction(feat.f_emoticons))])),

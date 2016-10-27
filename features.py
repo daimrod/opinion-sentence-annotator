@@ -343,7 +343,7 @@ def f_punctuation(s):
             last_excl_or_quest * 1]
 
 
-def f_elgongated_words(s):
+def f_elongated_words(s):
     """Return the number of words with one character repeated more than 2
 times.
 
@@ -368,7 +368,7 @@ times.
 
 def f_all_syntax(s):
     ret = []
-    for f in [f_elgongated_words,
+    for f in [f_elongated_words,
               f_all_caps]:
         ret.extend(f(s))
     return ret
