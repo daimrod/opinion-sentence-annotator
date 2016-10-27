@@ -110,7 +110,10 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
 
 def runNRCCanada(train_truncate=None, test_truncate=None,
-                 only_uid=None, new_text_features=[],
+                 only_uid=None,
+                 train_only_labels=['positive', 'negative', 'neutral'],
+                 test_only_labels=['positive', 'negative', 'neutral'],
+                 new_text_features=[],
                  repreprocess=False):
     """Reimplementation of NRCCanada
 
@@ -160,6 +163,8 @@ For tweet-level sentiment detection:
         test = pickle.load(p_file)
     train.truncate(train_truncate)
     test.truncate(test_truncate)
+    train.filter_label(train_only_labels)
+    test.filter_label(test_only_labels)
     if only_uid is not None:
         test.filter_uid(only_uid)
 
@@ -211,9 +216,9 @@ For tweet-level sentiment detection:
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2)))])),
         # This feature really drop the perfs
-        ('nrc_hashtag_pair_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
+        # ('nrc_hashtag_pair_lexicon', Pipeline([
+        #     ('selector', feat.ItemExtractor('tok')),
+        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True)))])),
         ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon)))])),
