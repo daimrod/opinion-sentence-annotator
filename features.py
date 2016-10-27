@@ -240,7 +240,7 @@ def f_n_neg_context(s):
 
     """
     re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
-    re_end_ctxt = r"[.:;!?]+"
+    re_end_ctxt = r"[,.:;!?]+"
     in_neg_ctxt = False
     neg_ctxt_counted = False
     n_neg_context = 0
@@ -631,7 +631,7 @@ contexts.
 
     """
     re_beg_ctxt = r"(\b(?:never|no|nothing|nowhere|noone|none|not|havent|hasnt|hadnt|cant|couldnt|shouldnt|wont|wouldnt|dont|doesnt|didnt|isnt|arent|aint)\b|n't\b)"
-    re_end_ctxt = r"[.:;!?]+"
+    re_end_ctxt = r"[.,:;!?]+"
     s_with_neg = []
     in_neg_ctxt = False
     for word in s.split(' '):
