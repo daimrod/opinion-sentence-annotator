@@ -270,7 +270,7 @@ def f_all_caps(s):
     """
     n = 0
     for word in s.split(' '):
-        if word.upper() == word:
+        if word.isupper():
             n = n + 1
     return [n]
 
