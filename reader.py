@@ -486,7 +486,7 @@ class URLReplacer(object):
 
     def __iter__(self):
         for s in self.iterable:
-            yield re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '#URL', s)
+            yield re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', 'url', s)
 
 
 class UserNameReplacer(object):
@@ -495,4 +495,4 @@ class UserNameReplacer(object):
 
     def __iter__(self):
         for s in self.iterable:
-            yield re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)', '@USER', s)
+            yield re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)', '@user', s)
