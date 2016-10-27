@@ -231,11 +231,11 @@ For tweet-level sentiment detection:
 
         ('word ngram', Pipeline([
             ('selector', feat.ItemExtractor('tok_neg')),
-            ('tfidf', CountVectorizer(binary=True,
+            ('count', CountVectorizer(binary=True,
                                       ngram_range=(1, 4)))])),
         ('char ngram', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
-            ('tfidf', CountVectorizer(binary=True, analyzer='char',
+            ('count', CountVectorizer(binary=True, analyzer='char',
                                       ngram_range=(3, 5)))]))]
     text_features.extend(new_text_features)
 
