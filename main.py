@@ -18,6 +18,9 @@ from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
 from sklearn.decomposition import TruncatedSVD
 
 from reader import Dataset  # We need this import because we're loading
@@ -93,12 +96,12 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
     for (d, tok) in zip(dataset.data, preprocessor):
         d['tok'] = tok
 
-    # logger.info('Extract Senna features')
-    # senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
-    # for idx in range(len(dataset.data)):
-    #     dataset.data[idx]['pos'] = senna[idx]['pos']
-    #     dataset.data[idx]['chk'] = senna[idx]['chk']
-    #     dataset.data[idx]['ner'] = senna[idx]['ner']
+    logger.info('Extract Senna features')
+    senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
+    for idx in range(len(dataset.data)):
+        dataset.data[idx]['pos'] = senna[idx]['pos']
+        dataset.data[idx]['chk'] = senna[idx]['chk']
+        dataset.data[idx]['ner'] = senna[idx]['ner']
 
     logger.info('Identify negated contexts')
     for d in dataset.data:
@@ -200,9 +203,9 @@ For tweet-level sentiment detection:
         ('negation', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-        # ('pos', Pipeline([
-        #     ('selector', feat.ItemExtractor('pos')),
-        #     ('vect', CountVectorizer())])),
+        ('pos', Pipeline([
+            ('selector', feat.ItemExtractor('pos')),
+            ('vect', CountVectorizer())])),
         ('punctuation', Pipeline([
             ('selector', feat.ItemExtractor('text')),
             ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
@@ -236,20 +239,20 @@ For tweet-level sentiment detection:
             ## This feature really drop the perfs without normalization
             ('normalizer', Normalizer())
         ])),
-        # ('nrc_sentiment140_unigram_lexicon', Pipeline([
-        #     ('selector', feat.ItemExtractor('tok_neg')),
-        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_unigram_lexicon))),
-        #     ])),
-        # ('nrc_sentiment140_bigram_lexicon', Pipeline([
-        #     ('selector', feat.ItemExtractor('tok_neg')),
-        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_bigram_lexicon, ngrams=2))),
-        #     ])),
-        # ('nrc_sentiment140_pair_lexicon', Pipeline([
-        #     ('selector', feat.ItemExtractor('tok_neg')),
-        #     ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_pair_lexicon, use_pair=True))),
-        #     ## This feature really drop the perfs without normalization
-        #     ('normalizer', Normalizer())
-        # ])),
+        ('nrc_sentiment140_unigram_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_unigram_lexicon))),
+            ])),
+        ('nrc_sentiment140_bigram_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_bigram_lexicon, ngrams=2))),
+            ])),
+        ('nrc_sentiment140_pair_lexicon', Pipeline([
+            ('selector', feat.ItemExtractor('tok_neg')),
+            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_pair_lexicon, use_pair=True))),
+            ## This feature really drop the perfs without normalization
+            ('normalizer', Normalizer())
+        ])),
         ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok_neg')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon))),
@@ -272,13 +275,15 @@ For tweet-level sentiment detection:
     logger.info('Train the pipeline')
     # clf = Pipeline([
     #     ('text_features', FeatureUnion(text_features)),
-    #     ('normalizer', Normalizer()),
-    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=10000000))]).fit(train.data, train.target)
+    #     #('standard scaler', StandardScaler(with_mean=False)),
+    #     #('min/max scaler', MinMaxScaler()),
+    #     ('max abs scaler', MaxAbsScaler()),
+    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=50))]).fit(train.data, train.target)
     clf = Pipeline([
         ('text_features', FeatureUnion(text_features)),
-        #('normalizer', Normalizer()),
+        ('max abs scaler', MaxAbsScaler()),
         ('clf', SGDClassifier(loss='hinge',
-                              n_iter=5,
+                              n_iter=1000,
                               n_jobs=5,
                               random_state=42))]).fit(train.data, train.target)
 
