@@ -256,7 +256,7 @@ For tweet-level sentiment detection:
         ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
             ('selector', feat.ItemExtractor('tok_neg')),
             ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon))),
-])),
+        ])),
         ('clusters', Pipeline([
             ('selector', feat.ItemExtractor('tok')),
             ('clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(carnegie_clusters))),
@@ -278,14 +278,13 @@ For tweet-level sentiment detection:
     #     #('standard scaler', StandardScaler(with_mean=False)),
     #     #('min/max scaler', MinMaxScaler()),
     #     ('max abs scaler', MaxAbsScaler()),
-    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=50))]).fit(train.data, train.target)
+    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=1000))]).fit(train.data, train.target)
     clf = Pipeline([
         ('text_features', FeatureUnion(text_features)),
         ('max abs scaler', MaxAbsScaler()),
         ('clf', SGDClassifier(loss='hinge',
-                              n_iter=1000,
-                              n_jobs=5,
-                              random_state=42))]).fit(train.data, train.target)
+                              n_iter=100,
+                              n_jobs=5))]).fit(train.data, train.target)
 
     logger.info('Classify test data')
     predicted = clf.predict(test.data)
@@ -303,7 +302,12 @@ For tweet-level sentiment detection:
     return clf, predicted, text_features
 
 
-def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
+def runCustom0(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
     """
     """
     logger.info('Load the resources')
@@ -331,11 +335,19 @@ def runCustom0(train_truncate=None, test_truncate=None, test_dataset=None):
 
     return runNRCCanada(train_truncate=train_truncate,
                         test_truncate=test_truncate,
-                        test_dataset=test_dataset,
-                        new_text_features=text_features)
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
 
 
-def runCustom0_with_SVD(train_truncate=None, test_truncate=None, test_dataset=None):
+def runCustom0_with_SVD(train_truncate=None, test_truncate=None,
+                        only_uid=None,
+                        train_only_labels=['positive', 'negative', 'neutral'],
+                        test_only_labels=['positive', 'negative', 'neutral'],
+                        new_text_features=[],
+                        repreprocess=False):
     """
     """
     logger.info('Load the resources')
@@ -364,11 +376,19 @@ def runCustom0_with_SVD(train_truncate=None, test_truncate=None, test_dataset=No
 
     return runNRCCanada(train_truncate=train_truncate,
                         test_truncate=test_truncate,
-                        test_dataset=test_dataset,
-                        new_text_features=text_features)
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
 
 
-def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
+def runCustom1(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
     """
     """
     logger.info('Load the resources')
@@ -398,13 +418,19 @@ def runCustom1(train_truncate=None, test_truncate=None, test_dataset=None):
 
     return runNRCCanada(train_truncate=train_truncate,
                         test_truncate=test_truncate,
-                        test_dataset=test_dataset,
-                        new_text_features=text_features)
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
 
 
-def runCustom1_with_SVD(train_truncate=None,
-                        test_truncate=None,
-                        test_dataset=None):
+def runCustom1_with_SVD(train_truncate=None, test_truncate=None,
+                        only_uid=None,
+                        train_only_labels=['positive', 'negative', 'neutral'],
+                        test_only_labels=['positive', 'negative', 'neutral'],
+                        new_text_features=[],
+                        repreprocess=False):
     """
     """
     logger.info('Load the resources')
@@ -435,5 +461,8 @@ def runCustom1_with_SVD(train_truncate=None,
 
     return runNRCCanada(train_truncate=train_truncate,
                         test_truncate=test_truncate,
-                        test_dataset=test_dataset,
-                        new_text_features=text_features)
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
