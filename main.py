@@ -284,7 +284,11 @@ For tweet-level sentiment detection:
         ('max abs scaler', MaxAbsScaler()),
         ('clf', SGDClassifier(loss='hinge',
                               n_iter=100,
-                              n_jobs=5))]).fit(train.data, train.target)
+                              n_jobs=5,
+                              # class_weight="balanced",
+                              # class_weight={0: 1, 1: 1, 2: 0.5},
+                              # class_weight={0: 1, 1: 1.5, 2: 0.25},
+        ))]).fit(train.data, train.target)
 
     logger.info('Classify test data')
     predicted = clf.predict(test.data)
@@ -293,7 +297,7 @@ For tweet-level sentiment detection:
     logger.info('\n' +
                 metrics.classification_report(test.target, predicted,
                                               target_names=test.labels))
-
+    
     try:
         logger.info('\n' +
                     eval_with_semeval_script(test, predicted))
@@ -450,6 +454,140 @@ def runCustom1_with_SVD(train_truncate=None, test_truncate=None,
         word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
         word2vec.init_sims(replace=True)
         word2vec.save(word2vec_path)
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
+            ('use feature', DictVectorizer()),
+            ('SVD', TruncatedSVD(n_components=100))]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
+
+def runCustom2(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
+    else:
+        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
+        raise ValueError
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
+            ('use feature', DictVectorizer())]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
+
+def runCustom2_with_SVD(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
+    else:
+        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
+        raise ValueError
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
+            ('use feature', DictVectorizer()),
+            ('SVD', TruncatedSVD(n_components=100))]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
+
+def runCustom3(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    word2vec_path = '/tmp/word2vec.custom3.txt'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
+    else:
+        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
+        raise ValueError
+
+    text_features = [
+        ('word2vec find closest', Pipeline([
+            ('selector', feat.ItemExtractor('tok')),
+            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
+            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
+            ('use feature', DictVectorizer())]))]
+
+    return runNRCCanada(train_truncate=train_truncate,
+                        test_truncate=test_truncate,
+                        only_uid=only_uid,
+                        train_only_labels=train_only_labels,
+                        test_only_labels=test_only_labels,
+                        new_text_features=text_features,
+                        repreprocess=repreprocess)
+
+def runCustom3_with_SVD(train_truncate=None, test_truncate=None,
+               only_uid=None,
+               train_only_labels=['positive', 'negative', 'neutral'],
+               test_only_labels=['positive', 'negative', 'neutral'],
+               new_text_features=[],
+               repreprocess=False):
+    """
+    """
+    logger.info('Load the resources')
+    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                     res.bing_liu_lexicon_path['positive'])
+    word2vec_path = '/tmp/word2vec.custom3.txt'
+    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
+    else:
+        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
+        raise ValueError
 
     text_features = [
         ('word2vec find closest', Pipeline([
