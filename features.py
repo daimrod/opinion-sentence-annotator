@@ -104,9 +104,10 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
 
 
 class FindClosestInLexicon(object):
-    def __init__(self, model, lexicon):
+    def __init__(self, model, lexicon, topn=1000):
         self.model = model
         self.lexicon = lexicon
+        self.topn = topn
         self.lexicon_inv = {}
         for word_lex in lexicon:
             if word_lex not in model:
@@ -137,7 +138,13 @@ class FindClosestInLexicon(object):
     #     return ret
 
     @functools.lru_cache(maxsize=None)
-    def find_closest_in_lexicon(self, word):
+    def find_scores_closest_in_lexicon(self, word):
+        """Return an array of scores [score1, score2, ...].
+
+        Return an array of scores [score1, score2, ...] with one score
+for each class in the given lexicon. The score is the distance to the
+closest word of the given class.
+        """
         if word not in self.model:
             return [-1] * len(self.lexicon_inv)
 
@@ -149,6 +156,32 @@ class FindClosestInLexicon(object):
             cdist = (cdist - 1) * -1
             score = numpy.sort(cdist)[0][-1]
             ret.append(score)
+        return ret
+
+    def find_scores_rank_closest_in_lexicon(self, word):
+        """Return an array of scores [score1, rank1, score2, rank2, ...].
+
+        Return an array of scores [score1, rank1, score2, rank2, ...] with one score
+for each class in the given lexicon and its rank. The score is the distance to the
+closest word of the given class.
+        """
+        ret = [-1] * (len(self.lexicon_inv) * 2)
+        if word not in self.model:
+            return ret
+
+        closest_words = self.model.similar_by_word(word, topn=self.topn)
+        classes = list(self.lexicon_inv)
+        done_classes = []
+        for (rank, el) in enumerate(closest_words):
+            close_word, score = el
+            if close_word in self.lexicon:
+                word_class = self.lexicon[close_word]
+                if word_class not in done_classes:
+                    class_idx = classes.index(word_class)
+                    # we have two features per class, the score and the rank
+                    offset = class_idx * 2
+                    ret[offset] = rank
+                    ret[offset + 1] = score
         return ret
 
     # @functools.lru_cache(maxsize=None)
@@ -501,7 +534,7 @@ class F_Find_Closest_In_Lexicon(object):
     def f_find_closest_in_lexicon(self, s):
         ret = []
         for word in s.split(' '):
-            ret.append(self.finder.find_closest_in_lexicon(word))
+            ret.append(self.finder.find_scores_closest_in_lexicon(word))
         return ret
     __call__ = f_find_closest_in_lexicon
 
