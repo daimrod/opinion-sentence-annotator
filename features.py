@@ -104,10 +104,14 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
 
 
 class FindClosestInLexicon(object):
-    def __init__(self, model, lexicon, topn=1000):
+    """
+    """
+    def __init__(self, model, lexicon, topn=1000, lower=True):
         self.model = model
         self.lexicon = lexicon
         self.topn = topn
+        self.lower = lower
+
         self.lexicon_inv = {}
         for word_lex in lexicon:
             if word_lex not in model:
@@ -145,6 +149,9 @@ class FindClosestInLexicon(object):
 for each class in the given lexicon. The score is the distance to the
 closest word of the given class.
         """
+        if self.lower:
+            word = word.lower()
+
         if word not in self.model:
             return [-1] * len(self.lexicon_inv)
 
@@ -158,14 +165,19 @@ closest word of the given class.
             ret.append(score)
         return ret
 
-    def find_scores_rank_closest_in_lexicon(self, word):
-        """Return an array of scores [score1, rank1, score2, rank2, ...].
+    @functools.lru_cache(maxsize=None)
+    def find_rank_closest_in_lexicon(self, word):
+        """Return an array of ranks [rank1, rank2, ...].
 
-        Return an array of scores [score1, rank1, score2, rank2, ...] with one score
-for each class in the given lexicon and its rank. The score is the distance to the
-closest word of the given class.
+        Return an array of scores [rank1, rank2, ...] with the rank
+        for each class in the given lexicon. The rank is the rank of
+        the closest word of the given class.
+
+        If we can't find a closest_word to word for a class, then its rank is set to topn*2/topn.
         """
-        ret = [-1] * (len(self.lexicon_inv) * 2)
+        if self.lower:
+            word = word.lower()
+        ret = [self.topn*2/self.topn] * len(self.lexicon_inv)
         if word not in self.model:
             return ret
 
@@ -178,10 +190,8 @@ closest word of the given class.
                 word_class = self.lexicon[close_word]
                 if word_class not in done_classes:
                     class_idx = classes.index(word_class)
-                    # we have two features per class, the score and the rank
-                    offset = class_idx * 2
-                    ret[offset] = rank
-                    ret[offset + 1] = score
+                    offset = class_idx
+                    ret[offset] = rank / self.topn
         return ret
 
     # @functools.lru_cache(maxsize=None)
@@ -534,7 +544,7 @@ class F_Find_Closest_In_Lexicon(object):
     def f_find_closest_in_lexicon(self, s):
         ret = []
         for word in s.split(' '):
-            ret.append(self.finder.find_scores_closest_in_lexicon(word))
+            ret.append(self.finder.find_rank_closest_in_lexicon(word))
         return ret
     __call__ = f_find_closest_in_lexicon
 
