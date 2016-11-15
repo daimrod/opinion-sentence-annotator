@@ -76,6 +76,19 @@ class ApplyFunction(BaseEstimator, TransformerMixin):
         return [self.fun(x) for x in X]
 
 
+class MeanVectors(BaseEstimator, TransformerMixin):
+    """Concatenate the input vectors using the mean.
+
+    Attributes:
+        Nothing
+    """
+    def fit(self, X, y=None, **params):
+        return self
+
+    def transform(self, X, **params):
+        return numpy.mean(X, axis=0)
+
+
 class ExtractFeatures(BaseEstimator, TransformerMixin):
     """Extract main features.
 
