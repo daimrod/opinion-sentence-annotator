@@ -288,6 +288,7 @@ For tweet-level sentiment detection:
                               # class_weight="balanced",
                               # class_weight={0: 1, 1: 1, 2: 0.5},
                               # class_weight={0: 1, 1: 1.5, 2: 0.25},
+                              random_state=42,
         ))]).fit(train.data, train.target)
 
     logger.info('Classify test data')
