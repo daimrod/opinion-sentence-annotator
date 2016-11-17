@@ -115,6 +115,7 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
 class FullPipeline(object):
     def __init__(self):
+        logger.info(self.__class__.__name__)
         pass
 
     def load_resources(self):
@@ -187,6 +188,7 @@ For tweet-level sentiment detection:
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],
                  repreprocess=False):
+        super().__init__()
         self.train_truncate = train_truncate
         self.test_truncate = test_truncate
         self.only_uid = only_uid
@@ -195,6 +197,7 @@ For tweet-level sentiment detection:
         self.repreprocess = repreprocess
 
     def load_resources(self):
+        super().load_resources()
         logger.info('Load the corpus')
         with open(preprocess(res.train_path, force=self.repreprocess), 'rb') as p_file:
             self.train = pickle.load(p_file)
@@ -223,6 +226,7 @@ For tweet-level sentiment detection:
         self.carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
     def build_pipeline(self):
+        super().build_pipeline()
         logger.info('Build the pipeline')
         self.text_features = [
             ['all caps', Pipeline([
