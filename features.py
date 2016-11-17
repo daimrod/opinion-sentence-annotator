@@ -119,7 +119,7 @@ class ExtractFeatures(BaseEstimator, TransformerMixin):
 class FindClosestInLexicon(object):
     """
     """
-    def __init__(self, model, lexicon, topn=1000, lower=True):
+    def __init__(self, model, lexicon, topn=10000, lower=True):
         self.model = model
         self.lexicon = lexicon
         self.topn = topn
