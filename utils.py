@@ -158,4 +158,4 @@ def assoc_value(lst, value):
     """
     for (idx, el) in enumerate(lst):
         if el[0] == value:
-            return idx, el
+            return el, idx
