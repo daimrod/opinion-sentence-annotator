@@ -143,3 +143,19 @@ def eval_with_semeval_script(test, predicted):
         os.remove(ofile.name)
         os.remove(ofile.name + '.scored')
     return ret
+
+
+def assoc_value(lst, value):
+    """Return the element associated to value and its index.
+
+    Args:
+        lst: A associative array/list.
+        value: The value to match on.
+
+    Returns:
+        The element associated to value (with the value itself) and
+        its index.
+    """
+    for (idx, el) in enumerate(lst):
+        if el[0] == value:
+            return idx, el

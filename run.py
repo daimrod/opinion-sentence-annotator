@@ -22,7 +22,7 @@ import logging
 
 
 if 'logger' not in locals():
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('__run__')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         '%(asctime)s %(filename)s:%(lineno)s - %(funcName)20s() %(levelname)-8s %(message)s')
@@ -39,23 +39,23 @@ if 'logger' not in locals():
     logger.addHandler(fh)
 
 # User imports
-from main import runNRCCanada
-from main import runCustom0, runCustom0_with_SVD
-from main import runCustom1, runCustom1_with_SVD
-from main import runCustom2, runCustom2_with_SVD
+from main import NRCCanada
+from main import Custom0, Custom0_with_SVD
+from main import Custom1, Custom1_with_SVD
+from main import Custom2, Custom2_with_SVD
 
 
 # User functions
 def main():
     if len(sys.argv) == 2:
         logger.info(sys.argv[1])
-    runNRCCanada()
-    runCustom0()
-    runCustom0_with_SVD()
-    runCustom1()
-    runCustom1_with_SVD()
-    runCustom2()
-    runCustom2_with_SVD()
+    NRCCanada().run()
+    Custom0().run()
+    Custom0_with_SVD().run()
+    Custom1().run()
+    Custom1_with_SVD().run()
+    Custom2().run()
+    Custom2_with_SVD().run()
 
 if __name__ == '__main__':
     main()

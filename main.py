@@ -46,11 +46,12 @@ from utils import merge_classes
 from utils import pretty_pipeline
 from utils import strings_to_integers
 from utils import eval_with_semeval_script
+from utils import assoc_value
 
 import features as feat
 import resources as res
 
-if 'logger' not in locals():
+if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -112,12 +113,34 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
     return preprocessed_path
 
 
-def runNRCCanada(train_truncate=None, test_truncate=None,
-                 only_uid=None,
-                 train_only_labels=['positive', 'negative', 'neutral'],
-                 test_only_labels=['positive', 'negative', 'neutral'],
-                 new_text_features=[],
-                 repreprocess=False):
+class FullPipeline(object):
+    def __init__(self):
+        pass
+
+    def load_resources(self):
+        pass
+
+    def build_pipeline(self):
+        pass
+
+    def run_train(self):
+        pass
+
+    def run_test(self):
+        pass
+
+    def print_results(self):
+        pass
+
+    def run(self):
+        self.load_resources()
+        self.build_pipeline()
+        self.run_train()
+        self.run_test()
+        self.print_results()
+
+
+class NRCCanada(FullPipeline):
     """Reimplementation of NRCCanada
 
 http://www.saifmohammad.com/WebPages/Abstracts/NRC-SentimentAnalysis.htm
@@ -158,450 +181,297 @@ For tweet-level sentiment detection:
       tokens.
 - word ngrams, character ngrams.
     """
-    logger.info('Load the corpus')
-    with open(preprocess(res.train_path, force=repreprocess), 'rb') as p_file:
-        train = pickle.load(p_file)
+    def __init__(self,
+                 train_truncate=None, test_truncate=None,
+                 only_uid=None,
+                 train_only_labels=['positive', 'negative', 'neutral'],
+                 test_only_labels=['positive', 'negative', 'neutral'],
+                 repreprocess=False):
+        self.train_truncate = train_truncate
+        self.test_truncate = test_truncate
+        self.only_uid = only_uid
+        self.train_only_labels = train_only_labels
+        self.test_only_labels = test_only_labels
+        self.repreprocess = repreprocess
 
-    with open(preprocess(res.test_path, force=repreprocess), 'rb') as p_file:
-        test = pickle.load(p_file)
-    train.truncate(train_truncate)
-    test.truncate(test_truncate)
-    train.filter_label(train_only_labels)
-    test.filter_label(test_only_labels)
-    if only_uid is not None:
-        test.filter_uid(only_uid)
+    def load_resources(self):
+        logger.info('Load the corpus')
+        with open(preprocess(res.train_path, force=self.repreprocess), 'rb') as p_file:
+            self.train = pickle.load(p_file)
+        with open(preprocess(res.test_path, force=self.repreprocess), 'rb') as p_file:
+            self.test = pickle.load(p_file)
+        self.train.truncate(self.train_truncate)
+        self.test.truncate(self.test_truncate)
+        self.train.filter_label(self.train_only_labels)
+        self.test.filter_label(self.test_only_labels)
+        if self.only_uid is not None:
+            self.test.filter_uid(self.only_uid)
 
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
-    nrc_hashtag_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_hashtag_unigram_lexicon_path)
-    nrc_hashtag_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_hashtag_bigram_lexicon_path)
-    nrc_hashtag_pair_lexicon = read_nrc_hashtag_pair(res.nrc_hashtag_pair_lexicon_path)
-    nrc_sentiment140_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_sentiment140_unigram_lexicon_path)
-    nrc_sentiment140_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_sentiment140_bigram_lexicon_path)
-    nrc_sentiment140_pair_lexicon = read_nrc_hashtag_pair(res.nrc_sentiment140_pair_lexicon_path)
-    nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
+        logger.info('Load the resources')
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        self.nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
+        self.nrc_hashtag_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_hashtag_unigram_lexicon_path)
+        self.nrc_hashtag_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_hashtag_bigram_lexicon_path)
+        self.nrc_hashtag_pair_lexicon = read_nrc_hashtag_pair(res.nrc_hashtag_pair_lexicon_path)
+        self.nrc_sentiment140_unigram_lexicon = read_nrc_hashtag_unigram(res.nrc_sentiment140_unigram_lexicon_path)
+        self.nrc_sentiment140_bigram_lexicon = read_nrc_hashtag_bigram(res.nrc_sentiment140_bigram_lexicon_path)
+        self.nrc_sentiment140_pair_lexicon = read_nrc_hashtag_pair(res.nrc_sentiment140_pair_lexicon_path)
+        self.nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
 
-    mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
-    carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
+        self.mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
+        self.carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
-    logger.info('Build the pipeline')
-    text_features = [
-        ('all caps', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('all caps', feat.ApplyFunction(feat.f_all_caps))])),
-        ('elongated', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('elongated', feat.ApplyFunction(feat.f_elongated_words))])),
-        ('emoticons', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('emoticons', feat.ApplyFunction(feat.F_Emoticons()))])),
-        ('hashtags', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('hashtags', feat.ApplyFunction(feat.f_n_hashtags))])),
-        ('negation', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('negation', feat.ApplyFunction(feat.f_n_neg_context))])),
-        ('pos', Pipeline([
-            ('selector', feat.ItemExtractor('pos')),
-            ('vect', CountVectorizer())])),
-        ('punctuation', Pipeline([
-            ('selector', feat.ItemExtractor('text')),
-            ('punctuation', feat.ApplyFunction(feat.f_punctuation))])),
+    def build_pipeline(self):
+        logger.info('Build the pipeline')
+        self.text_features = [
+            ['all caps', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['all caps', feat.ApplyFunction(feat.f_all_caps)]])],
+            ['elongated', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['elongated', feat.ApplyFunction(feat.f_elongated_words)]])],
+            ['emoticons', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['emoticons', feat.ApplyFunction(feat.F_Emoticons())]])],
+            ['hashtags', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['hashtags', feat.ApplyFunction(feat.f_n_hashtags)]])],
+            ['negation', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['negation', feat.ApplyFunction(feat.f_n_neg_context)]])],
+            ['pos', Pipeline([
+                ['selector', feat.ItemExtractor('pos')],
+                ['vect', CountVectorizer()]])],
+            ['punctuation', Pipeline([
+                ['selector', feat.ItemExtractor('text')],
+                ['punctuation', feat.ApplyFunction(feat.f_punctuation)]])],
 
-        # Manually constructed lexicons
-        ('nrc_emotion_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_emotion_lexicon))),
-            ])),
-        ('bing_liu_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(bing_liu_lexicon))),
-        ])),
-        ('mpqa_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(mpqa_lexicon))),
-        ])),
+            # Manually constructed lexicons
+            ['nrc_emotion_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_emotion_lexicon))],
+                ])],
+            ['bing_liu_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.bing_liu_lexicon))],
+            ])],
+            ['mpqa_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.mpqa_lexicon))],
+            ])],
 
-        # Automatically constructed lexicons
-        ('nrc_hashtag_unigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_unigram_lexicon))),
-            ])),
-        ('nrc_hashtag_bigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_bigram_lexicon, ngrams=2))),
-            ])),
-        ('nrc_hashtag_pair_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_pair_lexicon, use_pair=True))),
-            ## This feature really drop the perfs without normalization
-            ('normalizer', Normalizer())
-        ])),
-        ('nrc_sentiment140_unigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_unigram_lexicon))),
-            ])),
-        ('nrc_sentiment140_bigram_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_bigram_lexicon, ngrams=2))),
-            ])),
-        ('nrc_sentiment140_pair_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_sentiment140_pair_lexicon, use_pair=True))),
-            ## This feature really drop the perfs without normalization
-            ('normalizer', Normalizer())
-        ])),
-        ('nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
-            ('selector', feat.ItemExtractor('tok_neg')),
-            ('projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(nrc_hashtag_sentimenthashtags_lexicon))),
-        ])),
-        ('clusters', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(carnegie_clusters))),
-            ('convertion', CountVectorizer(binary=True))])),
-        ('word ngram', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('count', CountVectorizer(binary=True, lowercase=True,
-                                      ngram_range=(1, 4)))])),
-        ('char ngram', Pipeline([
-            ('selector', feat.ItemExtractor('text')),
-            ('count', CountVectorizer(binary=True, analyzer='char', lowercase=True,
-                                      ngram_range=(3, 5)))]))
-    ]
-    text_features.extend(new_text_features)
+            # Automatically constructed lexicons
+            ['nrc_hashtag_unigram_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_hashtag_unigram_lexicon))],
+                ])],
+            ['nrc_hashtag_bigram_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_hashtag_bigram_lexicon, ngrams=2))],
+                ])],
+            ['nrc_hashtag_pair_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_hashtag_pair_lexicon, use_pair=True))],
+                ## This feature really drop the perfs without normalization
+                ['normalizer', Normalizer()],
+            ])],
+            ['nrc_sentiment140_unigram_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_sentiment140_unigram_lexicon))],
+                ])],
+            ['nrc_sentiment140_bigram_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_sentiment140_bigram_lexicon, ngrams=2))],
+                ])],
+            ['nrc_sentiment140_pair_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_sentiment140_pair_lexicon, use_pair=True))],
+                ## This feature really drop the perfs without normalization
+                ['normalizer', Normalizer()],
+            ])],
+            ['nrc_hashtag_sentimenthashtags_lexicon', Pipeline([
+                ['selector', feat.ItemExtractor('tok_neg')],
+                ['projection', feat.ApplyFunction(feat.F_NRC_Project_Lexicon(self.nrc_hashtag_sentimenthashtags_lexicon))],
+            ])],
+            ['clusters', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['clusters', feat.ApplyFunction(feat.IM_Project_Lexicon(self.carnegie_clusters))],
+                ['convertion', CountVectorizer(binary=True)]])],
+            ['word ngram', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['count', CountVectorizer(binary=True, lowercase=True,
+                                          ngram_range=(1, 4))],
+            ])],
+            ['char ngram', Pipeline([
+                ['selector', feat.ItemExtractor('text')],
+                ['count', CountVectorizer(binary=True, analyzer='char', lowercase=True,
+                                          ngram_range=(3, 5))],
+            ])],
+        ]
 
-    logger.info('Train the pipeline')
-    # clf = Pipeline([
-    #     ('text_features', FeatureUnion(text_features)),
-    #     #('standard scaler', StandardScaler(with_mean=False)),
-    #     #('min/max scaler', MinMaxScaler()),
-    #     ('max abs scaler', MaxAbsScaler()),
-    #     ('clf', SVC(C=0.005, kernel='linear', max_iter=1000))]).fit(train.data, train.target)
-    clf = Pipeline([
-        ('text_features', FeatureUnion(text_features)),
-        ('max abs scaler', MaxAbsScaler()),
-        ('clf', SGDClassifier(loss='hinge',
-                              n_iter=100,
-                              n_jobs=5,
-                              # class_weight="balanced",
-                              # class_weight={0: 1, 1: 1, 2: 0.5},
-                              # class_weight={0: 1, 1: 1.5, 2: 0.25},
-                              random_state=42,
-        ))]).fit(train.data, train.target)
+    def run_train(self):
+        logger.info('Train the pipeline')
+        # clf = Pipeline([
+        #     ('text_features', FeatureUnion(text_features)),
+        #     #('standard scaler', StandardScaler(with_mean=False)),
+        #     #('min/max scaler', MinMaxScaler()),
+        #     ('max abs scaler', MaxAbsScaler()),
+        #     ('clf', SVC(C=0.005, kernel='linear', max_iter=1000))]).fit(train.data, train.target)
+        self.clf = Pipeline([
+            ['text_features', FeatureUnion(self.text_features)],
+            ['max abs scaler', MaxAbsScaler()],
+            ['clf', SGDClassifier(loss='hinge',
+                                  n_iter=100,
+                                  n_jobs=5,
+                                  # class_weight="balanced",
+                                  # class_weight={0: 1, 1: 1, 2: 0.5},
+                                  # class_weight={0: 1, 1: 1.5, 2: 0.25},
+                                  random_state=42
+            )]]).fit(self.train.data, self.train.target)
 
-    logger.info('Classify test data')
-    predicted = clf.predict(test.data)
-    logger.info('Results')
-    logger.debug(pretty_pipeline(clf))
-    logger.info('\n' +
-                metrics.classification_report(test.target, predicted,
-                                              target_names=test.labels))
-    
-    try:
+    def run_test(self):
+        logger.info('Classify test data')
+        self.predicted = self.clf.predict(self.test.data)
+
+    def print_results(self):
+        logger.info('Results')
+        logger.debug(pretty_pipeline(self.clf))
         logger.info('\n' +
-                    eval_with_semeval_script(test, predicted))
-    except:
-        pass
-    return clf, predicted, text_features
+                    metrics.classification_report(self.test.target, self.predicted,
+                                                  target_names=self.test.labels))
+
+        try:
+            logger.info('\n' +
+                        eval_with_semeval_script(self.test, self.predicted))
+        except:
+            pass
+
+    def run(self):
+        super().run()
+        return self.clf, self.predicted, self.text_features
 
 
-def runCustom0(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
+class Custom0(NRCCanada):
+    """This method adds a word2vec model projection to NRCCanada.
     """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = res.twitter_logger_en_path + '.word2vec'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load(word2vec_path)
-    else:
-        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-        reader = URLReplacer(reader)
-        reader = UserNameReplacer(reader)
-        reader = Tokenizer(reader, feat.happyfuntokenizer)
-        reader = Splitter(reader)
-        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
-        word2vec.init_sims(replace=True)
-        word2vec.save(word2vec_path)
+    def build_pipeline(self):
+        super().build_pipeline()
+        self.text_features.append(
+            ['custom0', Pipeline([
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['use feature', DictVectorizer()],
+        ])])
 
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer())]))]
-
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
+    def load_resources(self):
+        super().load_resources()
+        logger.info('Load word2vec model')
+        self.word2vec_path = res.twitter_logger_en_path + '.word2vec'
+        if os.path.exists(self.word2vec_path) and os.path.getmtime(self.word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+            self.word2vec = gensim.models.Word2Vec.load(self.word2vec_path)
+        else:
+            reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+            reader = URLReplacer(reader)
+            reader = UserNameReplacer(reader)
+            reader = Tokenizer(reader, feat.happyfuntokenizer)
+            reader = Splitter(reader)
+            self.word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+            self.word2vec.init_sims(replace=True)
+            self.word2vec.save(self.word2vec_path)
 
 
-def runCustom0_with_SVD(train_truncate=None, test_truncate=None,
-                        only_uid=None,
-                        train_only_labels=['positive', 'negative', 'neutral'],
-                        test_only_labels=['positive', 'negative', 'neutral'],
-                        new_text_features=[],
-                        repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = res.twitter_logger_en_path + '.word2vec'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load(word2vec_path)
-    else:
-        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-        reader = URLReplacer(reader)
-        reader = UserNameReplacer(reader)
-        reader = Tokenizer(reader, feat.happyfuntokenizer)
-        reader = Splitter(reader)
-        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
-        word2vec.init_sims(replace=True)
-        word2vec.save(word2vec_path)
+class Custom0_with_SVD(Custom0):
+    """This method uses SVD after word2vec projection"""
+    def build_pipeline(self):
+        super().build_pipeline()
+        el, idx = assoc_value(self.text_features, 'custom0')
+        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer()),
-            ('SVD', TruncatedSVD(n_components=100))]))]
+class Custom1(NRCCanada):
+    def build_pipeline(self):
+        super().build_pipeline()
+        self.text_features.append(
+            ['custom1', Pipeline([
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['use feature', DictVectorizer()]])])
 
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
+    def load_resources(self):
+        super().load_resources()
+        self.word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
+        if os.path.exists(self.word2vec_path) and os.path.getmtime(self.word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+            self.word2vec = gensim.models.Word2Vec.load(self.word2vec_path)
+        else:
+            logger.info('Train word2vec model')
+            reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
+            reader = URLReplacer(reader)
+            reader = UserNameReplacer(reader)
+            reader = Tokenizer(reader, feat.happyfuntokenizer)
+            reader = Splitter(reader)
+            reader = LexiconProjecter(reader, self.bing_liu_lexicon)
+            word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+            word2vec.init_sims(replace=True)
+            word2vec.save(self.word2vec_path)
 
 
-def runCustom1(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load(word2vec_path)
-    else:
-        logger.info('Train word2vec model')
-        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-        reader = URLReplacer(reader)
-        reader = UserNameReplacer(reader)
-        reader = Tokenizer(reader, feat.happyfuntokenizer)
-        reader = Splitter(reader)
-        reader = LexiconProjecter(reader, bing_liu_lexicon)
-        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
-        word2vec.init_sims(replace=True)
-        word2vec.save(word2vec_path)
-
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer())]))]
-
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
+class Custom1_with_SVD(Custom1):
+    def build_pipeline(self):
+        super().build_pipeline()
+        el, idx = assoc_value(self.text_features, 'custom1')
+        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
-def runCustom1_with_SVD(train_truncate=None, test_truncate=None,
-                        only_uid=None,
-                        train_only_labels=['positive', 'negative', 'neutral'],
-                        test_only_labels=['positive', 'negative', 'neutral'],
-                        new_text_features=[],
-                        repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load(word2vec_path)
-    else:
-        logger.info('Train word2vec model')
-        reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-        reader = URLReplacer(reader)
-        reader = UserNameReplacer(reader)
-        reader = Tokenizer(reader, feat.happyfuntokenizer)
-        reader = Splitter(reader)
-        reader = LexiconProjecter(reader, bing_liu_lexicon)
-        word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
-        word2vec.init_sims(replace=True)
-        word2vec.save(word2vec_path)
+class Custom2(NRCCanada):
+    def load_resources(self):
+        super().load_resources()
+        self.word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
+        if os.path.exists(self.word2vec_path) and os.path.getmtime(self.word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+            self.word2vec = gensim.models.Word2Vec.load_word2vec_format(self.word2vec_path, binary=False)
+        else:
+            logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
+            raise ValueError
 
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer()),
-            ('SVD', TruncatedSVD(n_components=100))]))]
+    def build_pipeline(self):
+        self.text_features.append(['custom2', Pipeline([
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['use feature', DictVectorizer()],
+        ])])
 
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
 
-def runCustom2(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
-    else:
-        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
-        raise ValueError
+class Custom2_with_SVD(Custom2):
+    def build_pipeline(self):
+        super().build_pipeline()
+        el, idx = assoc_value(self.text_features, 'custom2')
+        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer())]))]
 
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
+class Custom3(NRCCanada):
+    def load_resources(self):
+        super().load_resources()
+        self.word2vec_path = '/tmp/word2vec.custom3.txt'
+        if os.path.exists(self.word2vec_path) and os.path.getmtime(self.word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+            self.word2vec = gensim.models.Word2Vec.load_word2vec_format(self.word2vec_path, binary=False)
+        else:
+            logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
+            raise ValueError
 
-def runCustom2_with_SVD(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
-    else:
-        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
-        raise ValueError
+    def build_pipeline(self):
+        super().build_pipeline()
+        self.text_features.append(['custom3', Pipeline([
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['use feature', DictVectorizer()],
+        ])])
 
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer()),
-            ('SVD', TruncatedSVD(n_components=100))]))]
 
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
-
-def runCustom3(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = '/tmp/word2vec.custom3.txt'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
-    else:
-        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
-        raise ValueError
-
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer())]))]
-
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
-
-def runCustom3_with_SVD(train_truncate=None, test_truncate=None,
-               only_uid=None,
-               train_only_labels=['positive', 'negative', 'neutral'],
-               test_only_labels=['positive', 'negative', 'neutral'],
-               new_text_features=[],
-               repreprocess=False):
-    """
-    """
-    logger.info('Load the resources')
-    bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                     res.bing_liu_lexicon_path['positive'])
-    word2vec_path = '/tmp/word2vec.custom3.txt'
-    if os.path.exists(word2vec_path) and os.path.getmtime(word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
-        word2vec = gensim.models.Word2Vec.load_word2vec_format(word2vec_path, binary=False)
-    else:
-        logger.error('Word2Vec model doesn\'t exist %s', word2vec_path)
-        raise ValueError
-
-    text_features = [
-        ('word2vec find closest', Pipeline([
-            ('selector', feat.ItemExtractor('tok')),
-            ('find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(word2vec, bing_liu_lexicon))),
-            ('convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))),
-            ('use feature', DictVectorizer()),
-            ('SVD', TruncatedSVD(n_components=100))]))]
-
-    return runNRCCanada(train_truncate=train_truncate,
-                        test_truncate=test_truncate,
-                        only_uid=only_uid,
-                        train_only_labels=train_only_labels,
-                        test_only_labels=test_only_labels,
-                        new_text_features=text_features,
-                        repreprocess=repreprocess)
+class Custom3_with_SVD(Custom3):
+    def build_pipeline(self):
+        super().build_pipeline()
+        el, idx = assoc_value(self.text_features, 'custom3')
+        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
