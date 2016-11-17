@@ -115,30 +115,109 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
 class FullPipeline(object):
     def __init__(self):
-        logger.info(self.__class__.__name__)
-        pass
+        logger.info('Init %s' % self.__class__.__name__)
 
     def load_resources(self):
-        pass
+        logger.info('Load resources')
 
     def build_pipeline(self):
-        pass
+        logger.info('Build pipeline')
 
     def run_train(self):
-        pass
+        logger.info('Train')
 
     def run_test(self):
-        pass
+        logger.info('Test')
 
     def print_results(self):
-        pass
+        logger.info('Print results %s' % self.__class__.__name__)
 
     def run(self):
+        logger.info('Run %s' % self.__class__.__name__)
         self.load_resources()
         self.build_pipeline()
         self.run_train()
         self.run_test()
         self.print_results()
+
+
+class SmallPipeline(FullPipeline):
+    def __init__(self,
+                 train_truncate=None, test_truncate=None,
+                 only_uid=None,
+                 train_only_labels=['positive', 'negative', 'neutral'],
+                 test_only_labels=['positive', 'negative', 'neutral'],
+                 repreprocess=False):
+        super().__init__()
+        self.train_truncate = train_truncate
+        self.test_truncate = test_truncate
+        self.only_uid = only_uid
+        self.train_only_labels = train_only_labels
+        self.test_only_labels = test_only_labels
+        self.repreprocess = repreprocess
+
+    def load_resources(self):
+        super().load_resources()
+        logger.info('Load the corpus')
+        with open(preprocess(res.train_path, force=self.repreprocess), 'rb') as p_file:
+            self.train = pickle.load(p_file)
+        with open(preprocess(res.test_path, force=self.repreprocess), 'rb') as p_file:
+            self.test = pickle.load(p_file)
+        self.train.truncate(self.train_truncate)
+        self.test.truncate(self.test_truncate)
+        self.train.filter_label(self.train_only_labels)
+        self.test.filter_label(self.test_only_labels)
+        if self.only_uid is not None:
+            self.test.filter_uid(self.only_uid)
+
+    def build_pipeline(self):
+        super().build_pipeline()
+        self.text_features = [
+            ['all caps', Pipeline([
+                ['selector', feat.ItemExtractor('tok')],
+                ['all caps', feat.ApplyFunction(feat.f_all_caps)]])],
+            ]
+
+    def run_train(self):
+        super().run_train()
+        # clf = Pipeline([
+        #     ('text_features', FeatureUnion(text_features)),
+        #     #('standard scaler', StandardScaler(with_mean=False)),
+        #     #('min/max scaler', MinMaxScaler()),
+        #     ('max abs scaler', MaxAbsScaler()),
+        #     ('clf', SVC(C=0.005, kernel='linear', max_iter=1000))]).fit(train.data, train.target)
+        self.clf = Pipeline([
+            ['text_features', FeatureUnion(self.text_features)],
+            ['max abs scaler', MaxAbsScaler()],
+            ['clf', SGDClassifier(loss='hinge',
+                                  n_iter=100,
+                                  n_jobs=5,
+                                  # class_weight="balanced",
+                                  # class_weight={0: 1, 1: 1, 2: 0.5},
+                                  # class_weight={0: 1, 1: 1.5, 2: 0.25},
+                                  random_state=42
+            )]]).fit(self.train.data, self.train.target)
+
+    def run_test(self):
+        super().run_test()
+        self.predicted = self.clf.predict(self.test.data)
+
+    def print_results(self):
+        super().print_results()
+        logger.debug(pretty_pipeline(self.clf))
+        logger.info('\n' +
+                    metrics.classification_report(self.test.target, self.predicted,
+                                                  target_names=self.test.labels))
+
+        try:
+            logger.info('\n' +
+                        eval_with_semeval_script(self.test, self.predicted))
+        except:
+            pass
+
+    def run(self):
+        super().run()
+        return self.clf, self.predicted, self.text_features
 
 
 class NRCCanada(FullPipeline):
@@ -210,7 +289,7 @@ For tweet-level sentiment detection:
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
 
-        logger.info('Load the resources')
+        logger.info('Load the lexicons')
         self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                               res.bing_liu_lexicon_path['positive'])
         self.nrc_emotion_lexicon = read_nrc_emotion(res.nrc_emotion_lexicon_path)
@@ -223,11 +302,12 @@ For tweet-level sentiment detection:
         self.nrc_hashtag_sentimenthashtags_lexicon = read_nrc_hashtag_sentimenthashtags(res.nrc_hashtag_sentimenthashtags_path)
 
         self.mpqa_lexicon = read_mpqa(res.mpqa_lexicon_path)
+
+        logger.info('Load carnegie clusters')
         self.carnegie_clusters = read_carnegie_clusters(res.carnegie_clusters_path)
 
     def build_pipeline(self):
         super().build_pipeline()
-        logger.info('Build the pipeline')
         self.text_features = [
             ['all caps', Pipeline([
                 ['selector', feat.ItemExtractor('tok')],
@@ -315,7 +395,7 @@ For tweet-level sentiment detection:
         ]
 
     def run_train(self):
-        logger.info('Train the pipeline')
+        super().run_train()
         # clf = Pipeline([
         #     ('text_features', FeatureUnion(text_features)),
         #     #('standard scaler', StandardScaler(with_mean=False)),
@@ -335,11 +415,11 @@ For tweet-level sentiment detection:
             )]]).fit(self.train.data, self.train.target)
 
     def run_test(self):
-        logger.info('Classify test data')
+        super().run_test()
         self.predicted = self.clf.predict(self.test.data)
 
     def print_results(self):
-        logger.info('Results')
+        super().print_results()
         logger.debug(pretty_pipeline(self.clf))
         logger.info('\n' +
                     metrics.classification_report(self.test.target, self.predicted,
