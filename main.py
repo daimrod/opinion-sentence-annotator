@@ -147,8 +147,8 @@ class SmallPipeline(FullPipeline):
                  only_uid=None,
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],
-                 repreprocess=False):
-        super().__init__()
+                 repreprocess=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
         self.test_truncate = test_truncate
         self.only_uid = only_uid
@@ -266,8 +266,8 @@ For tweet-level sentiment detection:
                  only_uid=None,
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],
-                 repreprocess=False):
-        super().__init__()
+                 repreprocess=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
         self.test_truncate = test_truncate
         self.only_uid = only_uid
@@ -436,19 +436,51 @@ For tweet-level sentiment detection:
         return self.clf, self.predicted, self.text_features
 
 
-class Custom0(NRCCanada):
-    """This method adds a word2vec model projection to NRCCanada.
-    """
-    def build_pipeline(self):
+KEEP_POS = ['FW',                                           # mots étrangers
+            'RB', 'RBS', 'RBR',                             # adverbes
+            'VBN', 'VBP', 'VBG', 'VB', 'VBD', 'VBZ', 'MD',  # verbes + modal
+            'NNS', 'NNP', 'NNPS', 'NN',                     # nom
+            'JJ', 'JJR',                                    # adjectifs
+]
+
+class Word2VecBase(NRCCanada):
+    def build_pipeline_base(self):
         super().build_pipeline()
         self.text_features.append(
-            ['custom0', Pipeline([
+            ['word2vec', Pipeline([
             ['selector', feat.ItemExtractor('tok')],
             ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
             ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
             ['use feature', DictVectorizer()],
         ])])
 
+    def build_pipeline_filtered(self):
+        super().build_pipeline()
+        self.text_features.append(
+            ['word2vec', Pipeline([
+            ['filter', feat.ApplyFunction(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['use feature', DictVectorizer()],
+        ])])
+
+    def build_pipeline_filtered_mean(self):
+        super().build_pipeline()
+        self.text_features.append(
+            ['word2vec', Pipeline([
+            ['filter', feat.ApplyFunction(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
+            ['selector', feat.ItemExtractor('tok')],
+            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['mean', feat.MeanVectors()],
+        ])])
+        
+    build_pipeline = build_pipeline_filtered_mean
+
+
+class Custom0(Word2VecBase):
+    """This method adds a word2vec model projection to NRCCanada.
+    """
     def load_resources(self):
         super().load_resources()
         logger.info('Load word2vec model')
@@ -470,20 +502,11 @@ class Custom0_with_SVD(Custom0):
     """This method uses SVD after word2vec projection"""
     def build_pipeline(self):
         super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'custom0')
+        el, idx = assoc_value(self.text_features, 'word2vec')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
-class Custom1(NRCCanada):
-    def build_pipeline(self):
-        super().build_pipeline()
-        self.text_features.append(
-            ['custom1', Pipeline([
-            ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
-            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
-            ['use feature', DictVectorizer()]])])
-
+class Custom1(Word2VecBase):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
@@ -497,19 +520,19 @@ class Custom1(NRCCanada):
             reader = Tokenizer(reader, feat.happyfuntokenizer)
             reader = Splitter(reader)
             reader = LexiconProjecter(reader, self.bing_liu_lexicon)
-            word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
-            word2vec.init_sims(replace=True)
-            word2vec.save(self.word2vec_path)
+            self.word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+            self.word2vec.init_sims(replace=True)
+            self.word2vec.save(self.word2vec_path)
 
 
 class Custom1_with_SVD(Custom1):
     def build_pipeline(self):
         super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'custom1')
+        el, idx = assoc_value(self.text_features, 'word2vec')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
-class Custom2(NRCCanada):
+class Custom2(Word2VecBase):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
@@ -519,23 +542,15 @@ class Custom2(NRCCanada):
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
 
-    def build_pipeline(self):
-        self.text_features.append(['custom2', Pipeline([
-            ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
-            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
-            ['use feature', DictVectorizer()],
-        ])])
-
 
 class Custom2_with_SVD(Custom2):
     def build_pipeline(self):
         super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'custom2')
+        el, idx = assoc_value(self.text_features, 'word2vec')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
-class Custom3(NRCCanada):
+class Custom3(Word2VecBase):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = '/tmp/word2vec.custom3.txt'
@@ -545,26 +560,17 @@ class Custom3(NRCCanada):
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
 
-    def build_pipeline(self):
-        super().build_pipeline()
-        self.text_features.append(['custom3', Pipeline([
-            ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
-            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
-            ['use feature', DictVectorizer()],
-        ])])
-
 
 class Custom3_with_SVD(Custom3):
     def build_pipeline(self):
         super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'custom3')
+        el, idx = assoc_value(self.text_features, 'word2vec')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
 class TestPipeline(SmallPipeline):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.train_truncate = None
 
     def build_pipeline(self):

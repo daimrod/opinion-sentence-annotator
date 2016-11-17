@@ -86,7 +86,7 @@ class MeanVectors(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, **params):
-        return numpy.mean(X, axis=0)
+        return [numpy.mean(x, axis=0) for x in X]
 
 
 class ExtractFeatures(BaseEstimator, TransformerMixin):
@@ -798,7 +798,7 @@ the key and elements associated to key to drop.
             for (idx, el) in enumerate(d[key].split(' ')):
                 if idx not in idxes:
                     new_val.append(el)
-            d[key] = new_val
+            d[key] = ' '.join(new_val)
         return d
     __call__ = drop_on
 
@@ -824,6 +824,6 @@ the key and elements associated to key to keep.
             for (idx, el) in enumerate(d[key].split(' ')):
                 if idx in idxes:
                     new_val.append(el)
-            d[key] = new_val
+            d[key] = ' '.join(new_val)
         return d
     __call__ = keep_on
