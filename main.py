@@ -473,6 +473,7 @@ class Custom0_with_SVD(Custom0):
         el, idx = assoc_value(self.text_features, 'custom0')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
+
 class Custom1(NRCCanada):
     def build_pipeline(self):
         super().build_pipeline()
@@ -559,3 +560,22 @@ class Custom3_with_SVD(Custom3):
         super().build_pipeline()
         el, idx = assoc_value(self.text_features, 'custom3')
         el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
+
+
+class TestPipeline(SmallPipeline):
+    def __init__(self):
+        super().__init__()
+        self.train_truncate = None
+
+    def build_pipeline(self):
+        super().build_pipeline()
+        self.my_set = set()
+        self.text_features.append(['test', Pipeline([
+            ['filter on', feat.ApplyFunction(feat.DropOn(drop_on='pos', drop=[]))],
+            ['selector', feat.ItemExtractor('pos')],
+            ['print', feat.ApplyFunction(lambda s: [[self.my_set.add(tag) for tag in s][0] or 1])],
+        ])])
+
+    def run_train(self):
+        super().run_train()
+        print(self.my_set)
