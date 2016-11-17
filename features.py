@@ -775,3 +775,55 @@ class String_To_Feature(object):
             f['%s-%d' % (self.prefix, idx)] = val
         return f
     __call__ = string_to_feature
+
+
+class DropOn(object):
+    """Drop all elements for all keys in the input dictionnary based on
+the key and elements associated to key to drop.
+    """
+    def __init__(self, drop_on, drop):
+        self.drop_on = drop_on
+        self.drop = drop
+
+    def drop_on(self, d):
+        idxes = []
+        # Extract all index of values to drop
+        for (idx, el) in enumerate(d[self.drop_on].split(' ')):
+            if el in self.drop:
+                idxes.append(idx)
+        # For each element of the input dict
+        for key in d:
+            new_val = []
+            # Drop all values based on the indexes extracted previously
+            for (idx, el) in enumerate(d[key].split(' ')):
+                if idx not in idxes:
+                    new_val.append(el)
+            d[key] = new_val
+        return d
+    __call__ = drop_on
+
+
+class KeepOn(object):
+    """Keep all elements for all keys in the input dictionnary based on
+the key and elements associated to key to keep.
+    """
+    def __init__(self, keep_on, keep):
+        self.keep_on = keep_on
+        self.keep = keep
+
+    def keep_on(self, d):
+        idxes = []
+        # Extract all index of values to keep
+        for (idx, el) in enumerate(d[self.keep_on].split(' ')):
+            if el in self.keep:
+                idxes.append(idx)
+        # For each element of the input dict
+        for key in d:
+            new_val = []
+            # Keep all values based on the indexes extracted previously
+            for (idx, el) in enumerate(d[key].split(' ')):
+                if idx in idxes:
+                    new_val.append(el)
+            d[key] = new_val
+        return d
+    __call__ = keep_on
