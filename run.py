@@ -49,12 +49,15 @@ from main import Custom2, Custom2_with_SVD
 def main():
     if len(sys.argv) == 2:
         logger.info(sys.argv[1])
-    for model in [NRCCanada(),
-                  Custom0(), Custom0_with_SVD(),
-                  Custom1(), Custom1_with_SVD(),
-                  Custom2(), Custom2_with_SVD]:
+    parameters = {'topn': 1000,
+                  'n_components': 50}
+    for model in [NRCCanada,
+                  Custom0, Custom0_with_SVD,
+                  Custom1, Custom1_with_SVD,
+                  Custom2, Custom2_with_SVD]:
         try:
-            model.run()
+            logger.info('%s with %s' % (model.__name__, parameters))
+            model(**parameters).run()
         except Exception as ex:
             logger.error(ex)
 
