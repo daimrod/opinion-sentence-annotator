@@ -82,7 +82,7 @@ nrc_hashtag_sentimenthashtags_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentime
 nrc_sentiment140_unigram_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/unigrams-pmilexicon.txt')
 nrc_sentiment140_bigram_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/bigrams-pmilexicon.txt')
 nrc_sentiment140_pair_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/pairs-pmilexicon.txt')
-
+gnews_negative300_path = os.path.join(DATA_DIR, 'GoogleNews-vectors-negative300.bin.gz')
 
 carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
 
