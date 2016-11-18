@@ -444,14 +444,21 @@ KEEP_POS = ['FW',                                           # mots étrangers
             'JJ', 'JJR',                                    # adjectifs
 ]
 
+
 class Word2VecBase(NRCCanada):
+    def __init__(self, topn=10000, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.topn = topn
+
     def build_pipeline_base(self):
         super().build_pipeline()
         self.text_features.append(
             ['word2vec', Pipeline([
             ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
-            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['find closest', AF(feat.F_Find_Closest_In_Lexicon(self.word2vec,
+                                                               self.bing_liu_lexicon,
+                                                               self.topn))],
+            ['convert to feature', AF(feat.Array_To_Feature('word2vec-closest'))],
             ['use feature', DictVectorizer()],
         ])])
 
@@ -459,10 +466,12 @@ class Word2VecBase(NRCCanada):
         super().build_pipeline()
         self.text_features.append(
             ['word2vec', Pipeline([
-            ['filter', feat.ApplyFunction(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
+            ['filter', AF(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
             ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
-            ['convert to feature', feat.ApplyFunction(feat.Array_To_Feature('word2vec-closest'))],
+            ['find closest', AF(feat.F_Find_Closest_In_Lexicon(self.word2vec,
+                                                               self.bing_liu_lexicon,
+                                                               self.topn))],
+            ['convert to feature', AF(feat.Array_To_Feature('word2vec-closest'))],
             ['use feature', DictVectorizer()],
         ])])
 
@@ -470,9 +479,11 @@ class Word2VecBase(NRCCanada):
         super().build_pipeline()
         self.text_features.append(
             ['word2vec', Pipeline([
-            ['filter', feat.ApplyFunction(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
+            ['filter', AF(feat.KeepOn(keep_on='pos', keep=KEEP_POS))],
             ['selector', feat.ItemExtractor('tok')],
-            ['find closest', feat.ApplyFunction(feat.F_Find_Closest_In_Lexicon(self.word2vec, self.bing_liu_lexicon))],
+            ['find closest', AF(feat.F_Find_Closest_In_Lexicon(self.word2vec,
+                                                               self.bing_liu_lexicon,
+                                                               self.topn))],
             ['mean', feat.MeanVectors()],
         ])])
         
@@ -499,12 +510,31 @@ class Custom0(Word2VecBase):
             self.word2vec.save(self.word2vec_path)
 
 
-class Custom0_with_SVD(Custom0):
-    """This method uses SVD after word2vec projection"""
+class Custom0_GNews(Word2VecBase):
+    """This method adds a word2vec model projection to NRCCanada.
+    """
+    def load_resources(self):
+        super().load_resources()
+        logger.info('Load word2vec model')
+        self.word2vec_path = res.gnews_negative300_path
+        if os.path.exists(self.word2vec_path) and os.path.getmtime(self.word2vec_path) > os.path.getmtime(res.twitter_logger_en_path):
+            self.word2vec = gensim.models.Word2Vec.load_word2vec_format(self.word2vec_path, binary=True)
+        else:
+            logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
+            raise ValueError
+
+
+class WithSVD(Word2VecBase):
+    def __init__(self, n_components=50, model_with_svd='word2vec',
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.n_components = n_components
+        self.model_with_svd = model_with_svd
+
     def build_pipeline(self):
         super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'word2vec')
-        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
+        el, idx = assoc_value(self.text_features, self.model_with_svd)
+        el[1].steps.append(['SVD', TruncatedSVD(n_components=self.n_components)])
 
 
 class Custom1(Word2VecBase):
@@ -526,13 +556,6 @@ class Custom1(Word2VecBase):
             self.word2vec.save(self.word2vec_path)
 
 
-class Custom1_with_SVD(Custom1):
-    def build_pipeline(self):
-        super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'word2vec')
-        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
-
-
 class Custom2(Word2VecBase):
     def load_resources(self):
         super().load_resources()
@@ -542,13 +565,6 @@ class Custom2(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
-
-
-class Custom2_with_SVD(Custom2):
-    def build_pipeline(self):
-        super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'word2vec')
-        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
 
 
 class Custom3(Word2VecBase):
@@ -562,11 +578,20 @@ class Custom3(Word2VecBase):
             raise ValueError
 
 
-class Custom3_with_SVD(Custom3):
-    def build_pipeline(self):
-        super().build_pipeline()
-        el, idx = assoc_value(self.text_features, 'word2vec')
-        el[1].steps.append(['SVD', TruncatedSVD(n_components=100)])
+class Custom0_with_SVD(Custom0, WithSVD):
+    pass
+
+
+class Custom1_with_SVD(Custom1, WithSVD):
+    pass
+
+
+class Custom2_with_SVD(Custom2, WithSVD):
+    pass
+
+
+class Custom3_with_SVD(Custom3, WithSVD):
+    pass
 
 
 class TestPipeline(SmallPipeline):
@@ -578,9 +603,9 @@ class TestPipeline(SmallPipeline):
         super().build_pipeline()
         self.my_set = set()
         self.text_features.append(['test', Pipeline([
-            ['filter on', feat.ApplyFunction(feat.DropOn(drop_on='pos', drop=[]))],
+            ['filter on', AF(feat.DropOn(drop_on='pos', drop=[]))],
             ['selector', feat.ItemExtractor('pos')],
-            ['print', feat.ApplyFunction(lambda s: [[self.my_set.add(tag) for tag in s][0] or 1])],
+            ['print', AF(lambda s: [[self.my_set.add(tag) for tag in s][0] or 1])],
         ])])
 
     def run_train(self):
