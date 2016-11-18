@@ -49,13 +49,14 @@ from main import Custom2, Custom2_with_SVD
 def main():
     if len(sys.argv) == 2:
         logger.info(sys.argv[1])
-    NRCCanada().run()
-    Custom0().run()
-    Custom0_with_SVD().run()
-    Custom1().run()
-    Custom1_with_SVD().run()
-    Custom2().run()
-    Custom2_with_SVD().run()
+    for model in [NRCCanada(),
+                  Custom0(), Custom0_with_SVD(),
+                  Custom1(), Custom1_with_SVD(),
+                  Custom2(), Custom2_with_SVD]:
+        try:
+            model.run()
+        except Exception as ex:
+            logger.error(ex)
 
 if __name__ == '__main__':
     main()
