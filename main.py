@@ -115,8 +115,12 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
 
 class FullPipeline(object):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         logger.info('Init %s' % self.__class__.__name__)
+        if len(args) != 0:
+            logger.warning('args remaining %s' % args)
+        if len(kwargs) != 0:
+            logger.warning('kwargs remaining %s' % kwargs)
 
     def load_resources(self):
         logger.info('Load resources')
