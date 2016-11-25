@@ -450,8 +450,30 @@ KEEP_POS = ['FW',                                           # mots étrangers
 
 
 class Word2VecBase(NRCCanada):
-    def __init__(self, topn=10000, *args, **kwargs):
+    def __init__(self, topn=10000,
+                 word2vec_param={},
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.word2vec_param = {'size': 100,
+                               'alpha': 0.025,
+                               'window': 5,
+                               'min_count': 5,
+                               'max_vocab_size': None,
+                               'sample': 0.001,
+                               'seed': 1,
+                               'workers': 3,
+                               'min_alpha': 0.0001,
+                               'sg': 0,
+                               'hs': 0,
+                               'negative': 5,
+                               'cbow_mean': 1,
+                               'hashfxn': hash,
+                               'iter': 5,
+                               'null_word': 0,
+                               'trim_rule': None,
+                               'sorted_vocab': 1,
+                               'batch_words': 10000}
+        self.word2vec.update(word2vec_param)
         self.topn = topn
 
     def build_pipeline_base(self):
@@ -509,7 +531,7 @@ class Custom0(Word2VecBase):
             reader = UserNameReplacer(reader)
             reader = Tokenizer(reader, feat.happyfuntokenizer)
             reader = Splitter(reader)
-            self.word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+            self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
 
@@ -555,7 +577,7 @@ class Custom1(Word2VecBase):
             reader = Tokenizer(reader, feat.happyfuntokenizer)
             reader = Splitter(reader)
             reader = LexiconProjecter(reader, self.bing_liu_lexicon)
-            self.word2vec = gensim.models.Word2Vec(reader, min_count=10, workers=4)
+            self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
 
