@@ -49,8 +49,11 @@ from main import Custom2, Custom2_with_SVD
 def main():
     if len(sys.argv) == 2:
         logger.info(sys.argv[1])
+    word2vec_param = {'size': 300, 'window': 5, 'min_count': 5, 'workers': 5}
     parameters = {'topn': 10000,
-                  'n_components': 50}
+                  'n_components': 50,
+                  'word2vec_param': word2vec_param}
+
     for model in [NRCCanada,
                   Custom0, Custom0_with_SVD,
                   Custom1, Custom1_with_SVD,
