@@ -49,7 +49,7 @@ from main import Custom2, Custom2_with_SVD
 def main():
     if len(sys.argv) == 2:
         logger.info(sys.argv[1])
-    parameters = {'topn': 1000,
+    parameters = {'topn': 10000,
                   'n_components': 50}
     for model in [NRCCanada,
                   Custom0, Custom0_with_SVD,
