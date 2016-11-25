@@ -1,7 +1,6 @@
 numpy
 sklearn
 gensim
-pickle
 lxml
 nltk
 scipy
