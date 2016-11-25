@@ -536,7 +536,7 @@ class WithSVD(Word2VecBase):
         self.model_with_svd = model_with_svd
 
     def build_pipeline(self):
-        super().build_pipeline()
+        super().build_pipeline_filtered()
         el, idx = assoc_value(self.text_features, self.model_with_svd)
         el[1].steps.append(['SVD', TruncatedSVD(n_components=self.n_components)])
 
