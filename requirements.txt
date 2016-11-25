@@ -5,5 +5,5 @@ lxml
 nltk
 scipy
 keras
-tensorflow
+# tensorflow
 theano
