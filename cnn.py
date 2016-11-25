@@ -40,7 +40,13 @@ class CNNBase(FullPipeline):
                  only_uid=None,
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],
-                 repreprocess=False, *args, **kwargs):
+                 repreprocess=False,
+                 nb_epoch=2, batch_size=128,
+                 max_sequence_length=1000,
+                 max_nb_words=20000,
+                 embedding_dim=100,
+                 validation_split=0.2,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
         self.test_truncate = test_truncate
@@ -48,6 +54,12 @@ class CNNBase(FullPipeline):
         self.train_only_labels = train_only_labels
         self.test_only_labels = test_only_labels
         self.repreprocess = repreprocess
+        self.nb_epoch = nb_epoch
+        self.batch_size = batch_size
+        self.max_sequence_length = max_sequence_length
+        self.max_nb_words = max_nb_words
+        self.embedding_dim = embedding_dim
+        self.validation_split = validation_split
 
     def load_resources(self):
         super().load_resources()
@@ -63,10 +75,6 @@ class CNNBase(FullPipeline):
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
 
-        self.max_sequence_length = 1000
-        self.max_nb_words = 20000
-        self.embedding_dim = 10
-        self.validation_split = 0.2
 
         self.texts = [d['tok'] for d in self.train.data]
         self.labels_index = dict([(name, nid) for nid, name in enumerate(self.train.labels)])
@@ -128,15 +136,15 @@ class CNNBase(FullPipeline):
         super().build_pipeline()
         self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
         self.embedded_sequences = self.embedding_layer(self.sequence_input)
-        self.x = Conv1D(128, 5, activation='relu')(self.embedded_sequences)
-        self.x = MaxPooling1D(5)(self.x)
-        self.x = Conv1D(128, 5, activation='relu')(self.x)
-        self.x = MaxPooling1D(5)(self.x)
-        self.x = Conv1D(128, 5, activation='relu')(self.x)
-        self.x = MaxPooling1D(35)(self.x)  # global max pooling
-        self.x = Flatten()(self.x)
-        self.x = Dense(128, activation='relu')(self.x)
-        self.preds = Dense(len(self.labels_index), activation='softmax')(self.x)
+        x = Conv1D(128, 5, activation='relu')(self.embedded_sequences)
+        x = MaxPooling1D(5)(x)
+        x = Conv1D(128, 5, activation='relu')(x)
+        x = MaxPooling1D(5)(x)
+        x = Conv1D(128, 5, activation='relu')(x)
+        x = MaxPooling1D(35)(x)  # global max pooling
+        x = Flatten()(x)
+        x = Dense(128, activation='relu')(x)
+        self.preds = Dense(len(self.labels_index), activation='softmax')(x)
 
         self.model = Model(self.sequence_input, self.preds)
         self.model.compile(loss='categorical_crossentropy',
@@ -146,7 +154,7 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         self.model.fit(self.x_train, self.y_train, validation_data=(self.x_val, self.y_val),
-                       nb_epoch=2, batch_size=128)
+                       nb_epoch=self.nb_epoch, batch_size=self.batch_size)
 
     def run_test(self):
         super().run_test()
@@ -154,11 +162,11 @@ class CNNBase(FullPipeline):
         self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
         self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
         logger.info('Shape of data tensor: %s', self.test_data.shape)
-        self.predicted = self.model.predict(self.test_data, verbose=1)
-        if self.predicted.shape[-1] > 1:
-            self.predicted = self.predicted.argmax(axis=-1)
+        self.t_predicted = self.model.predict(self.test_data, verbose=1)
+        if self.t_predicted.shape[-1] > 1:
+            self.predicted = self.t_predicted.argmax(axis=-1)
         else:
-            self.predicted = (self.predicted > 0.5).astype('int32')
+            self.predicted = (self.t_predicted > 0.5).astype('int32')
 
     def print_results(self):
         super().print_results()
@@ -171,4 +179,3 @@ class CNNBase(FullPipeline):
                         eval_with_semeval_script(self.test, self.predicted))
         except:
             pass
-
