@@ -34,6 +34,19 @@ from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.models import Model
 import numpy as np
 
+from keras.callbacks import BaseLogger
+
+
+class TestEpoch(BaseLogger):
+    def __init__(self, pipeline):
+        self.pipeline = pipeline
+
+    def on_epoch_end(self, epoch, logs={}):
+        super().on_epoch_end(epoch, logs)
+        self.pipeline.run_test()
+        self.pipeline.print_results()
+
+
 class CNNBase(FullPipeline):
     def __init__(self,
                  train_truncate=None, test_truncate=None,
@@ -154,7 +167,8 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         self.model.fit(self.x_train, self.y_train, validation_data=(self.x_val, self.y_val),
-                       nb_epoch=self.nb_epoch, batch_size=self.batch_size)
+                       nb_epoch=self.nb_epoch, batch_size=self.batch_size,
+                       callbacks=[TestEpoch(self)])
 
     def run_test(self):
         super().run_test()
