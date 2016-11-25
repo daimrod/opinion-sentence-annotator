@@ -1,6 +1,6 @@
 numpy
 sklearn
-gensym
+gensim
 pickle
 lxml
 nltk
