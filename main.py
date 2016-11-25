@@ -473,7 +473,7 @@ class Word2VecBase(NRCCanada):
                                'trim_rule': None,
                                'sorted_vocab': 1,
                                'batch_words': 10000}
-        self.word2vec.update(word2vec_param)
+        self.word2vec_param.update(word2vec_param)
         self.topn = topn
 
     def build_pipeline_base(self):
