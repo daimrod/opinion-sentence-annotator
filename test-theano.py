@@ -1,5 +1,5 @@
-# THEANO_FLAGS=mode=FASTUN,floatX=float32,device=gpu python test-theano.py
-# THEANO_FLAGS=mode=FASTUN,floatX=float32,device=cpu python test-theano.py
+# THEANO_FLAGS=mode=FAST_RUN,floatX=float32,device=gpu python test-theano.py
+# THEANO_FLAGS=mode=FAST_RUN,floatX=float32,device=cpu python test-theano.py
 
 from theano import function, config, shared, sandbox
 import theano.tensor as T
