@@ -188,7 +188,7 @@ An Keras implementation of Cheng Guao CNN for sentence classification.
 
 I add minor adjustments to make it work for the Semeval Sentiment Analsysis tasks.
     """
-    def __init__(self, ngram_filters=[3, 4, 5], nb_filter=100, dropout=0, *args, **kwargs):
+    def __init__(self, ngram_filters=[3, 4, 5], nb_filter=100, dropout=0.0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ngram_filters = ngram_filters
         self.nb_filter = nb_filter
