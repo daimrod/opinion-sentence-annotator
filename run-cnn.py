@@ -45,15 +45,20 @@ from cnn import CNNBase, CNNChengGuo
 
 # User functions
 def main():
-    parser = argparse.ArgumentParser(description='CNN runner.')
-    parser.add_argument('-nb_epoch',  type=int, default=2,
-                        help='The number of epoch.')
+    parser = argparse.ArgumentParser(description='CNN runner.',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m', '--message', type=str,
                         help='A message to log at the start.')
+    for model in [CNNBase, CNNChengGuo]:
+        spec = inspect.getargspec(model.__init__)
+        for arg, val in zip(spec.args[1:], spec.defaults):
+            parser.add_argument('-' + arg, type=type(val), default=val,
+                                help='default: %(default)s')
     args = parser.parse_args()
+    print(args)
     logger.info(args.message)
     try:
-        CNNChengGuo(nb_epoch=args.nb_epoch).run()
+        CNNChengGuo(**args.__dict__).run()
     except Exception as ex:
         logger.error(ex)
 
