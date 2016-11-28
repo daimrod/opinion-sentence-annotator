@@ -40,7 +40,7 @@ if 'logger' not in locals():
     logger.addHandler(fh)
 
 # User imports
-from cnn import CNNBase
+from cnn import CNNBase, CNNChengGuo
 
 
 # User functions
@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
     logger.info(args.message)
     try:
-        CNNBase(nb_epoch=args.nb_epoch).run()
+        CNNChengGuo(nb_epoch=args.nb_epoch).run()
     except Exception as ex:
         logger.error(ex)
 

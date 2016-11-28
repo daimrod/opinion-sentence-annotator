@@ -31,7 +31,9 @@ from keras.preprocessing.sequence import pad_sequences
 from keras.utils.np_utils import to_categorical
 from keras.layers import Dense, Input, Flatten
 from keras.layers import Conv1D, MaxPooling1D, Embedding
-from keras.models import Model
+from keras.layers import Convolution1D
+from keras.layers import Activation, Dropout, merge
+from keras.models import Model, Graph, Sequential
 import numpy as np
 
 from keras.callbacks import BaseLogger
@@ -193,3 +195,44 @@ class CNNBase(FullPipeline):
                         eval_with_semeval_script(self.test, self.predicted))
         except:
             pass
+
+
+class CNNChengGuo(CNNBase):
+    """More or less c/c from https://github.com/bwallace/CNN-for-text-classification/blob/master/CNN_text.py
+An Keras implementation of Cheng Guao CNN for sentence classification.
+
+I add minor adjustments to make it work for the Semeval Sentiment Analsysis tasks.
+    """
+    def __init__(self, ngram_filters=[3, 4, 5], nb_filter=100, dropout=0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ngram_filters = ngram_filters
+        self.nb_filter = nb_filter
+        self.dropout = dropout
+
+    def build_pipeline(self):
+        super().build_pipeline()
+        # again, credit to Cheng Guo
+
+        self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
+        self.embedded_sequences = self.embedding_layer(self.sequence_input)
+        x = Dropout(self.dropout)(self.embedded_sequences)
+        ngram_filters = []
+        for n_gram in self.ngram_filters:
+            x1 = Convolution1D(nb_filter=self.nb_filter,
+                               filter_length=n_gram,
+                               border_mode='valid',
+                               activation='relu',
+                               subsample_length=1)(x)
+            x1 = MaxPooling1D(pool_length=self.max_sequence_length - n_gram + 1)(x1)
+            x1 = Flatten()(x1)
+            ngram_filters.append(x1)
+        x = merge(ngram_filters, mode='concat')
+        x = Dropout(self.dropout)(x)
+        self.preds = Dense(len(self.labels_index), activation='sigmoid')(x)
+        self.model = Model(self.sequence_input, self.preds)
+
+        print('model built')
+        print(self.model.summary())
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='rmsprop',
+                           metrics=['acc'])
