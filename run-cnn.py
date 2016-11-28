@@ -5,6 +5,7 @@
 import sys
 import os
 import inspect
+import argparse
 
 
 def get_script_dir(follow_symlinks=True):
@@ -44,10 +45,15 @@ from cnn import CNNBase
 
 # User functions
 def main():
-    if len(sys.argv) == 2:
-        logger.info(sys.argv[1])
+    parser = argparse.ArgumentParser(description='CNN runner.')
+    parser.add_argument('-nb_epoch',  type=int, default=2,
+                        help='The number of epoch.')
+    parser.add_argument('-m', '--message', type=str,
+                        help='A message to log at the start.')
+    args = parser.parse_args()
+    logger.info(args.message)
     try:
-        CNNBase().run()
+        CNNBase(nb_epoch=args.nb_epoch).run()
     except Exception as ex:
         logger.error(ex)
 
