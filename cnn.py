@@ -51,7 +51,7 @@ class TestEpoch(BaseLogger):
 
 class CNNBase(FullPipeline):
     def __init__(self,
-                 train_truncate=None, test_truncate=None,
+                 train_truncate=0, test_truncate=0,
                  only_uid=None,
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],

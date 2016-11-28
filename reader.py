@@ -45,6 +45,9 @@ class Dataset():
         self.labels = labels
 
     def truncate(self, n):
+        """Truncate the dataset unless it's 0."""
+        if n == 0:
+            return
         self.data = self.data[:n]
         self.filenames = self.filenames[:n]
         self.target_names = self.target_names[:n]
