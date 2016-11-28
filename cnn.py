@@ -58,6 +58,7 @@ class CNNBase(FullPipeline):
                  repreprocess=False,
                  nb_epoch=2, batch_size=128,
                  max_sequence_length=1000,
+                 shuffle=True,
                  max_nb_words=20000,
                  embedding_dim=100,
                  *args, **kwargs):
@@ -73,6 +74,7 @@ class CNNBase(FullPipeline):
         self.max_sequence_length = max_sequence_length
         self.max_nb_words = max_nb_words
         self.embedding_dim = embedding_dim
+        self.shuffle = shuffle
 
     def load_resources(self):
         super().load_resources()
@@ -107,12 +109,6 @@ class CNNBase(FullPipeline):
         logger.info('Shape of data tensor: %s', self.train_data.shape)
         logger.info('Shape of label tensor: %s', self.labels.shape)
         logger.info('label index: %s', self.labels_index)
-
-        logger.info('Shuffle training set')
-        self.indices = np.arange(self.train_data.shape[0])
-        np.random.shuffle(self.indices)
-        self.train_data = self.train_data[self.indices]
-        self.labels = self.labels[self.indices]
 
         # logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
@@ -158,7 +154,8 @@ class CNNBase(FullPipeline):
         super().run_train()
         self.model.fit(self.train_data, self.labels,
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
-                       callbacks=[TestEpoch(self)])
+                       callbacks=[TestEpoch(self)],
+                       shuffle=self.shuffle)
 
     def run_test(self):
         super().run_test()
