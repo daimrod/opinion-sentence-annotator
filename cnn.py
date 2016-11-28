@@ -60,7 +60,6 @@ class CNNBase(FullPipeline):
                  max_sequence_length=1000,
                  max_nb_words=20000,
                  embedding_dim=100,
-                 validation_split=0.2,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
@@ -74,7 +73,6 @@ class CNNBase(FullPipeline):
         self.max_sequence_length = max_sequence_length
         self.max_nb_words = max_nb_words
         self.embedding_dim = embedding_dim
-        self.validation_split = validation_split
 
     def load_resources(self):
         super().load_resources()
@@ -110,21 +108,11 @@ class CNNBase(FullPipeline):
         logger.info('Shape of label tensor: %s', self.labels.shape)
         logger.info('label index: %s', self.labels_index)
 
-        logger.info('Split the data into a training set and a validation set')
+        logger.info('Shuffle training set')
         self.indices = np.arange(self.train_data.shape[0])
         np.random.shuffle(self.indices)
         self.train_data = self.train_data[self.indices]
         self.labels = self.labels[self.indices]
-        self.nb_validation_samples = int(self.validation_split * self.train_data.shape[0])
-
-        self.x_train = self.train_data[:-self.nb_validation_samples]
-        self.y_train = self.labels[:-self.nb_validation_samples]
-        self.x_val = self.train_data[-self.nb_validation_samples:]
-        self.y_val = self.labels[-self.nb_validation_samples:]
-        logger.info('Shape of x_train tensor %s', self.x_train.shape)
-        logger.info('Shape of y_train tensor %s', self.x_train.shape)
-        logger.info('Shape of x_val tensor %s', self.x_train.shape)
-        logger.info('Shape of y_val tensor %s', self.x_train.shape)
 
         # logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
@@ -168,7 +156,7 @@ class CNNBase(FullPipeline):
 
     def run_train(self):
         super().run_train()
-        self.model.fit(self.x_train, self.y_train, validation_data=(self.x_val, self.y_val),
+        self.model.fit(self.train_data, self.labels,
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
                        callbacks=[TestEpoch(self)])
 
