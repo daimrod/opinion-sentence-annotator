@@ -7,22 +7,9 @@ import numpy as np
 np.random.seed(1337)  # for reproducibility
 
 from keras.preprocessing import sequence
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.layers import Embedding
-from keras.layers import Convolution1D, AveragePooling1D, AveragePooling2D, AveragePooling3D, GlobalMaxPooling1D
-from keras.layers import GlobalAveragePooling1D
-from keras.layers import TimeDistributed
-from keras.datasets import imdb
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.layers import Embedding
-from keras.layers import LSTM
+from keras.layers import Dense, Input
 from keras.preprocessing.text import Tokenizer
-from keras.preprocessing import sequence
 from keras.models import Model
-from keras.layers import Dense, Dropout, Embedding, LSTM, Input, Bidirectional
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -41,7 +28,7 @@ if 'logger' not in locals():
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
 
-from main import NRCCanada, Dataset
+from svm import NRCCanada, Dataset
 import reader as Reader
 import resources as res
 import features as feat

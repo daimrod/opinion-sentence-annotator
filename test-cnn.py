@@ -70,7 +70,7 @@ labels = []  # list of label ids
 #                 labels.append(label_id)
 
 import resources as res
-from main import preprocess, Dataset
+from base import preprocess, Dataset
 import pickle
 
 with open(preprocess(res.train_path, force=False), 'rb') as p_file:

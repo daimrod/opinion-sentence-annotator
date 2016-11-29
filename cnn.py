@@ -20,9 +20,8 @@ if 'logger' not in locals():
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
 
-from main import FullPipeline, Dataset
-from main import preprocess, pretty_pipeline
-from main import eval_with_semeval_script
+from base import FullPipeline, Dataset, preprocess
+from utils import eval_with_semeval_script
 from sklearn import metrics
 import resources as res
 import pickle
@@ -32,9 +31,8 @@ from keras.utils.np_utils import to_categorical
 from keras.layers import Dense, Input, Flatten
 from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.layers import Convolution1D
-from keras.layers import Activation, Dropout, merge
-from keras.models import Model, Graph, Sequential
-import numpy as np
+from keras.layers import Dropout, merge
+from keras.models import Model
 
 from keras.callbacks import BaseLogger
 

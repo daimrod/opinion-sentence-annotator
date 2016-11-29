@@ -9,17 +9,12 @@ import os
 import gensim
 
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import SGDClassifier
-from sklearn.svm import LinearSVC
-from sklearn.svm import SVC
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import Normalizer
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.decomposition import TruncatedSVD
 
@@ -28,7 +23,6 @@ from reader import Dataset  # We need this import because we're loading
 from reader import read_bing_liu
 from reader import read_carnegie_clusters
 from reader import read_mpqa
-from reader import read_semeval_dataset
 from reader import read_nrc_hashtag_unigram
 from reader import read_nrc_hashtag_bigram
 from reader import read_nrc_hashtag_pair
@@ -42,15 +36,15 @@ from reader import LexiconProjecter
 from reader import URLReplacer
 from reader import UserNameReplacer
 
-from utils import merge_classes
 from utils import pretty_pipeline
-from utils import strings_to_integers
 from utils import eval_with_semeval_script
 from utils import assoc_value
 
 import features as feat
 from features import ApplyFunction as AF
 import resources as res
+
+from base import FullPipeline, Dataset, preprocess
 
 if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     logger = logging.getLogger(__name__)
@@ -68,82 +62,6 @@ if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
-
-
-########## Pipeline
-def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutral']):
-    preprocessed_path = dataset_path + '.pp.pickle'
-    if not force and os.path.isfile(preprocessed_path):
-        return preprocessed_path
-
-    logger.info('Read dataset')
-    logger.debug(dataset_path)
-    dataset = read_semeval_dataset(dataset_path)
-    logger.info('  Convert objective and neutral to objective/neutral')
-    merge_classes(dataset.target_names,
-                  ['objective',
-                   'neutral',
-                   'objective-OR-neutral'],
-                  'neutral')
-    logger.info('  Build the target array')
-    dataset.labels = labels
-    target = strings_to_integers(dataset.target_names, labels)
-    dataset.target.extend(target)
-
-    logger.info('Normalize and tokenize the text')
-    generator = (d['text'] for d in dataset.data)
-    preprocessor = URLReplacer(generator)
-    preprocessor = UserNameReplacer(preprocessor)
-    preprocessor = Tokenizer(preprocessor, feat.happyfuntokenizer)
-    for (d, tok) in zip(dataset.data, preprocessor):
-        d['tok'] = tok
-
-    logger.info('Extract Senna features')
-    senna = feat.f_senna_multi([d['tok'] for d in dataset.data])
-    for idx in range(len(dataset.data)):
-        dataset.data[idx]['pos'] = senna[idx]['pos']
-        dataset.data[idx]['chk'] = senna[idx]['chk']
-        dataset.data[idx]['ner'] = senna[idx]['ner']
-
-    logger.info('Identify negated contexts')
-    for d in dataset.data:
-        d['tok_neg'] = feat.im_neg_context(d['tok'])
-
-    with open(preprocessed_path, 'wb') as p_file:
-        pickle.dump(dataset, p_file)
-    return preprocessed_path
-
-
-class FullPipeline(object):
-    def __init__(self, *args, **kwargs):
-        logger.info('Init %s' % self.__class__.__name__)
-        if len(args) != 0:
-            logger.warning('args remaining %s' % args)
-        if len(kwargs) != 0:
-            logger.warning('kwargs remaining %s' % kwargs)
-
-    def load_resources(self):
-        logger.info('Load resources')
-
-    def build_pipeline(self):
-        logger.info('Build pipeline')
-
-    def run_train(self):
-        logger.info('Train')
-
-    def run_test(self):
-        logger.info('Test')
-
-    def print_results(self):
-        logger.info('Print results %s' % self.__class__.__name__)
-
-    def run(self):
-        logger.info('Run %s' % self.__class__.__name__)
-        self.load_resources()
-        self.build_pipeline()
-        self.run_train()
-        self.run_test()
-        self.print_results()
 
 
 class SmallPipeline(FullPipeline):

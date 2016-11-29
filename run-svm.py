@@ -39,10 +39,10 @@ if 'logger' not in locals():
     logger.addHandler(fh)
 
 # User imports
-from main import NRCCanada
-from main import Custom0, Custom0_with_SVD
-from main import Custom1, Custom1_with_SVD
-from main import Custom2, Custom2_with_SVD
+from svm import NRCCanada
+from svm import Custom0, Custom0_with_SVD
+from svm import Custom1, Custom1_with_SVD
+from svm import Custom2, Custom2_with_SVD
 
 
 # User functions

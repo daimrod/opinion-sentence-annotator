@@ -49,6 +49,8 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m', '--message', type=str,
                         help='A message to log at the start.')
+    parser.add_argument('--model', type=str,
+                        help='The name of the model to use.')
     for model in [CNNBase, CNNChengGuo]:
         spec = inspect.getargspec(model.__init__)
         for arg, val in zip(spec.args[1:], spec.defaults):
