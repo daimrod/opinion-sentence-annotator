@@ -45,6 +45,7 @@ class TestEpoch(BaseLogger):
 
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
+        logger.info('epoch: ', epoch)
         self.pipeline.run_test()
         self.pipeline.print_results()
 
