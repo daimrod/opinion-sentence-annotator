@@ -62,7 +62,8 @@ def main():
     logger.info(args.message)
     logger.info(args)
     try:
-        CNNChengGuo(**args.__dict__).run()
+        model = CNNRegister[args.model]
+        model(**args.__dict__).run()
     except Exception as ex:
         logger.error(ex)
 
