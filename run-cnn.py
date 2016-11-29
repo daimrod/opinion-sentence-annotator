@@ -49,7 +49,7 @@ from cnn import CNNRegister
 def main():
     parser = argparse.ArgumentParser(description='CNN runner.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-m', '--message', type=str,
+    parser.add_argument('-m', '--message', type=str, default='',
                         help='A message to log at the start.')
     parser.add_argument('--model', type=str, default='CNNBase', choices=CNNRegister,
                         help='The name of the model to use.')
