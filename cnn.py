@@ -36,6 +36,8 @@ from keras.models import Model
 
 from keras.callbacks import BaseLogger
 
+CNNRegister = {}
+
 
 class TestEpoch(BaseLogger):
     def __init__(self, pipeline):
@@ -179,6 +181,7 @@ class CNNBase(FullPipeline):
                         eval_with_semeval_script(self.test, self.predicted))
         except:
             pass
+CNNRegister['CNNBase'] = CNNBase
 
 
 class CNNChengGuo(CNNBase):
@@ -220,3 +223,4 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='rmsprop',
                            metrics=['acc'])
+CNNRegister['CNNChengGuo'] = CNNChengGuo

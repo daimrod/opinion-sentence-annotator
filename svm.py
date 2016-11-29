@@ -44,7 +44,11 @@ import features as feat
 from features import ApplyFunction as AF
 import resources as res
 
-from base import FullPipeline, Dataset, preprocess
+from base import FullPipeline
+from base import Dataset
+from base import preprocess
+
+SVMRegister = {}
 
 if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     logger = logging.getLogger(__name__)
@@ -357,7 +361,7 @@ For tweet-level sentiment detection:
     def run(self):
         super().run()
         return self.clf, self.predicted, self.text_features
-
+SVMRegister['NRCCanada'] = NRCCanada
 
 KEEP_POS = ['FW',                                           # mots étrangers
             'RB', 'RBS', 'RBR',                             # adverbes
@@ -452,6 +456,7 @@ class Custom0(Word2VecBase):
             self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
+SVMRegister['Custom0'] = Custom0
 
 
 class Custom0_GNews(Word2VecBase):
@@ -466,6 +471,7 @@ class Custom0_GNews(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
+SVMRegister['Custom0_GNews'] = Custom0_GNews
 
 
 class WithSVD(Word2VecBase):
@@ -498,6 +504,7 @@ class Custom1(Word2VecBase):
             self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
+SVMRegister['Custom1'] = Custom1
 
 
 class Custom2(Word2VecBase):
@@ -509,6 +516,7 @@ class Custom2(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
+SVMRegister['Custom2'] = Custom2
 
 
 class Custom3(Word2VecBase):
@@ -520,22 +528,27 @@ class Custom3(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
+SVMRegister['Custom3'] = Custom3
 
 
 class Custom0_with_SVD(Custom0, WithSVD):
     pass
+SVMRegister['Custom0_with_SVD'] = Custom0_with_SVD
 
 
 class Custom1_with_SVD(Custom1, WithSVD):
     pass
+SVMRegister['Custom1_with_SVD'] = Custom1_with_SVD
 
 
 class Custom2_with_SVD(Custom2, WithSVD):
     pass
+SVMRegister['Custom2_with_SVD'] = Custom2_with_SVD
 
 
 class Custom3_with_SVD(Custom3, WithSVD):
     pass
+SVMRegister['Custom3_with_SVD'] = Custom3_with_SVD
 
 
 class TestPipeline(SmallPipeline):
