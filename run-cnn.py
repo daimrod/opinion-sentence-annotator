@@ -55,8 +55,8 @@ def main():
             parser.add_argument('-' + arg, type=type(val), default=val,
                                 help='default: %(default)s')
     args = parser.parse_args()
-    print(args)
     logger.info(args.message)
+    logger.info(args)
     try:
         CNNChengGuo(**args.__dict__).run()
     except Exception as ex:
