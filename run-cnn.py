@@ -40,7 +40,9 @@ if 'logger' not in locals():
     logger.addHandler(fh)
 
 # User imports
-from cnn import CNNBase, CNNChengGuo
+from cnn import CNNBase
+from cnn import CNNChengGuo
+from cnn import CNNRegister
 
 
 # User functions
@@ -49,8 +51,8 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m', '--message', type=str,
                         help='A message to log at the start.')
-    parser.add_argument('--model', type=str,
-                        help='The name of the model to use.')
+    parser.add_argument('--model', type=str, default='CNNBase',
+                        help='The name of the model to use. Available modules are %s.' % ", ".join(CNNRegister))
     for model in [CNNBase, CNNChengGuo]:
         spec = inspect.getargspec(model.__init__)
         for arg, val in zip(spec.args[1:], spec.defaults):
