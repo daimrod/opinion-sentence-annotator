@@ -12,14 +12,15 @@ if 'logger' not in locals():
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
-    logger.addHandler(sh)
 
     # FileHandler
     fh = logging.FileHandler('log.txt', 'a')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
 
+    logger.handlers = [sh, fh]
+
+import embeddings as emb
 from base import FullPipeline, preprocess
 from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
@@ -37,6 +38,8 @@ from keras.layers import Dropout, merge
 from keras.models import Model
 
 from keras.callbacks import BaseLogger
+
+import numpy as np
 
 CNNRegister = {}
 
@@ -113,26 +116,13 @@ class CNNBase(FullPipeline):
         logger.info('Shape of label tensor: %s', self.labels.shape)
         logger.info('label index: %s', self.labels_index)
 
-        # logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
-        # self.embeddings_index = {}
-        # self.embedding_matrix = np.zeros((self.nb_words + 1, self.EMBEDDING_DIM))
-        # for word, i in self.word_index.items():
-        #     if i > self.MAX_NB_WORDS:
-        #         continue
-        #     self.embedding_vector = self.embeddings_index.get(word)
-        #     if self.embedding_vector is not None:
-        #         # words not found in embedding index will be all-zeros.
-        #         self.embedding_matrix[i] = self.embedding_vector
-
         # load pre-trained word embeddings into an Embedding layer
         # note that we set trainable = False so as to keep the embeddings fixed
         self.embedding_layer = Embedding(self.nb_words + 1,
                                          self.embedding_dim,
-                                         # weights=[self.embedding_matrix],
                                          input_length=self.max_sequence_length,
-                                         # trainable=False
-        )
+                                         trainable=True)
 
     def build_pipeline(self):
         super().build_pipeline()
@@ -226,3 +216,28 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
                            optimizer='rmsprop',
                            metrics=['acc'])
 CNNRegister['CNNChengGuo'] = CNNChengGuo
+
+
+class CNNChengGuo_Custom0(CNNChengGuo, emb.WithCustom0):
+    def load_resources(self):
+        super().load_resources()
+        logger.info('Preparing embedding matrix.')
+        self.nb_words = min(self.max_nb_words, len(self.word_index))
+        self.embeddings_index = {}
+        self.embedding_matrix = np.zeros((self.nb_words + 1,
+                                          self.embedding_dim))
+        for word, i in self.word_index.items():
+            if i > self.max_nb_words:
+                continue
+            if word in self.custom0:
+                # words not found in embedding index will be all-zeros.
+                self.embedding_matrix[i] = self.custom0[word]
+
+        # load pre-trained word embeddings into an Embedding layer
+        # note that we set trainable = False so as to keep the embeddings fixed
+        self.embedding_layer = Embedding(self.nb_words + 1,
+                                         self.embedding_dim,
+                                         weights=[self.embedding_matrix],
+                                         input_length=self.max_sequence_length,
+                                         trainable=False)
+CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
