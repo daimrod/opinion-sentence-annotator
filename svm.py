@@ -438,7 +438,7 @@ class Word2VecBase(NRCCanada):
     build_pipeline = build_pipeline_filtered_mean
 
 
-class Custom0(Word2VecBase):
+class WithCustom0(FullPipeline):
     """This method adds a word2vec model projection to NRCCanada.
     """
     def load_resources(self):
@@ -456,10 +456,9 @@ class Custom0(Word2VecBase):
             self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
-SVMRegister['Custom0'] = Custom0
 
 
-class Custom0_GNews(Word2VecBase):
+class WithGNews(FullPipeline):
     """This method adds a word2vec model projection to NRCCanada.
     """
     def load_resources(self):
@@ -471,7 +470,6 @@ class Custom0_GNews(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
-SVMRegister['Custom0_GNews'] = Custom0_GNews
 
 
 class WithSVD(Word2VecBase):
@@ -487,7 +485,7 @@ class WithSVD(Word2VecBase):
         el[1].steps.append(['SVD', TruncatedSVD(n_components=self.n_components)])
 
 
-class Custom1(Word2VecBase):
+class WithCustom1(FullPipeline):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = res.twitter_logger_en_path + '.word2vec.custom1'
@@ -504,10 +502,9 @@ class Custom1(Word2VecBase):
             self.word2vec = gensim.models.Word2Vec(reader, **self.word2vec_param)
             self.word2vec.init_sims(replace=True)
             self.word2vec.save(self.word2vec_path)
-SVMRegister['Custom1'] = Custom1
 
 
-class Custom2(Word2VecBase):
+class WithCustom2(FullPipeline):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
@@ -516,10 +513,9 @@ class Custom2(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
-SVMRegister['Custom2'] = Custom2
 
 
-class Custom3(Word2VecBase):
+class WithCustom3(FullPipeline):
     def load_resources(self):
         super().load_resources()
         self.word2vec_path = '/tmp/word2vec.custom3.txt'
@@ -528,7 +524,11 @@ class Custom3(Word2VecBase):
         else:
             logger.error('Word2Vec model doesn\'t exist %s', self.word2vec_path)
             raise ValueError
-SVMRegister['Custom3'] = Custom3
+
+
+class Custom0(Word2VecBase, WithCustom0):
+    pass
+SVMRegister['Custom0'] = Custom0
 
 
 class Custom0_with_SVD(Custom0, WithSVD):
@@ -536,14 +536,39 @@ class Custom0_with_SVD(Custom0, WithSVD):
 SVMRegister['Custom0_with_SVD'] = Custom0_with_SVD
 
 
+class GNews(Word2VecBase, WithGNews):
+    pass
+SVMRegister['GNews'] = GNews
+
+
+class GNews_with_SVD(GNews, WithSVD):
+    pass
+SVMRegister['GNews'] = GNews_with_SVD
+
+
+class Custom1(Word2VecBase, WithCustom1):
+    pass
+SVMRegister['Custom1'] = Custom1
+
+
 class Custom1_with_SVD(Custom1, WithSVD):
     pass
 SVMRegister['Custom1_with_SVD'] = Custom1_with_SVD
 
 
+class Custom2(Word2VecBase, WithCustom2):
+    pass
+SVMRegister['Custom1'] = Custom2
+
+
 class Custom2_with_SVD(Custom2, WithSVD):
     pass
 SVMRegister['Custom2_with_SVD'] = Custom2_with_SVD
+
+
+class Custom3(Word2VecBase, WithCustom3):
+    pass
+SVMRegister['Custom1'] = Custom3
 
 
 class Custom3_with_SVD(Custom3, WithSVD):
