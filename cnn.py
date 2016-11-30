@@ -224,6 +224,7 @@ class CNNChengGuo_Custom0(CNNChengGuo, emb.WithCustom0):
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         self.embeddings_index = {}
+        self.embedding_dim = self.custom0.syn0.shape[1]
         self.embedding_matrix = np.zeros((self.nb_words + 1,
                                           self.embedding_dim))
         for word, i in self.word_index.items():
