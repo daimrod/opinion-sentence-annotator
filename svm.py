@@ -43,9 +43,11 @@ from utils import assoc_value
 import features as feat
 from features import ApplyFunction as AF
 import resources as res
+import embeddings as emb
 
 from base import FullPipeline
-from base import Dataset
+from reader import Dataset  # We need this import because we're loading
+                            # a Dataset with pickle
 from base import preprocess
 
 SVMRegister = {}
@@ -438,40 +440,6 @@ class Word2VecBase(NRCCanada):
     build_pipeline = build_pipeline_filtered_mean
 
 
-class WithCustom0(FullPipeline):
-    """This method adds a word2vec model projection to NRCCanada.
-    """
-    def load_resources(self):
-        super().load_resources()
-        logger.info('Load word2vec model')
-        self.custom0_path = res.twitter_logger_en_path + '.word2vec'
-        if os.path.exists(self.custom0_path) and os.path.getmtime(self.custom0_path) > os.path.getmtime(res.twitter_logger_en_path):
-            self.custom0 = gensim.models.Word2Vec.load(self.custom0_path)
-        else:
-            reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-            reader = URLReplacer(reader)
-            reader = UserNameReplacer(reader)
-            reader = Tokenizer(reader, feat.happyfuntokenizer)
-            reader = Splitter(reader)
-            self.custom0 = gensim.models.Word2Vec(reader, **self.word2vec_param)
-            self.custom0.init_sims(replace=True)
-            self.custom0.save(self.custom0_path)
-
-
-class WithGNews(FullPipeline):
-    """This method loads a gnews model.
-    """
-    def load_resources(self):
-        super().load_resources()
-        logger.info('Load gnews model')
-        self.gnews_path = res.gnews_negative300_path
-        if os.path.exists(self.gnews_path) and os.path.getmtime(self.gnews_path) > os.path.getmtime(res.twitter_logger_en_path):
-            self.gnews = gensim.models.Word2Vec.load_word2vec_format(self.gnews_path, binary=True)
-        else:
-            logger.error('Gnews model doesn\'t exist %s', self.gnews_path)
-            raise ValueError
-
-
 class WithSVD(Word2VecBase):
     def __init__(self, n_components=50, model_with_svd='word2vec',
                  *args, **kwargs):
@@ -485,48 +453,7 @@ class WithSVD(Word2VecBase):
         el[1].steps.append(['SVD', TruncatedSVD(n_components=self.n_components)])
 
 
-class WithCustom1(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
-        self.custom1_path = res.twitter_logger_en_path + '.word2vec.custom1'
-        if os.path.exists(self.custom1_path) and os.path.getmtime(self.custom1_path) > os.path.getmtime(res.twitter_logger_en_path):
-            self.custom1 = gensim.models.Word2Vec.load(self.custom1_path)
-        else:
-            logger.info('Train custom1 model')
-            reader = TwitterLoggerTextReader(res.twitter_logger_en_path)
-            reader = URLReplacer(reader)
-            reader = UserNameReplacer(reader)
-            reader = Tokenizer(reader, feat.happyfuntokenizer)
-            reader = Splitter(reader)
-            reader = LexiconProjecter(reader, self.bing_liu_lexicon)
-            self.custom1 = gensim.models.Word2Vec(reader, **self.word2vec_param)
-            self.custom1.init_sims(replace=True)
-            self.custom1.save(self.custom1_path)
-
-
-class WithCustom2(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
-        self.custom2_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
-        if os.path.exists(self.custom2_path) and os.path.getmtime(self.custom2_path) > os.path.getmtime(res.twitter_logger_en_path):
-            self.custom2 = gensim.models.Word2Vec.load_word2vec_format(self.custom2_path, binary=False)
-        else:
-            logger.error('Custom2 model doesn\'t exist %s', self.custom2_path)
-            raise ValueError
-
-
-class WithCustom3(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
-        self.custom3_path = '/tmp/word2vec.custom3.txt'
-        if os.path.exists(self.custom3_path) and os.path.getmtime(self.custom3_path) > os.path.getmtime(res.twitter_logger_en_path):
-            self.custom3 = gensim.models.Word2Vec.load_word2vec_format(self.custom3_path, binary=False)
-        else:
-            logger.error('Custom3 model doesn\'t exist %s', self.custom3_path)
-            raise ValueError
-
-
-class Custom0(Word2VecBase, WithCustom0):
+class Custom0(Word2VecBase, emb.WithCustom0):
     def load_resources(self):
         super().load_resources()
         self.word2vec = self.custom0
@@ -538,7 +465,7 @@ class Custom0_with_SVD(Custom0, WithSVD):
 SVMRegister['Custom0_with_SVD'] = Custom0_with_SVD
 
 
-class GNews(Word2VecBase, WithGNews):
+class GNews(Word2VecBase, emb.WithGNews):
     def load_resources(self):
         super().load_resources()
         self.word2vec = self.gnews
@@ -550,7 +477,7 @@ class GNews_with_SVD(GNews, WithSVD):
 SVMRegister['GNews'] = GNews_with_SVD
 
 
-class Custom1(Word2VecBase, WithCustom1):
+class Custom1(Word2VecBase, emb.WithCustom1):
     def load_resources(self):
         super().load_resources()
         self.word2vec = self.custom1
@@ -562,7 +489,7 @@ class Custom1_with_SVD(Custom1, WithSVD):
 SVMRegister['Custom1_with_SVD'] = Custom1_with_SVD
 
 
-class Custom2(Word2VecBase, WithCustom2):
+class Custom2(Word2VecBase, emb.WithCustom2):
     def load_resources(self):
         super().load_resources()
         self.word2vec = self.custom2
@@ -574,7 +501,7 @@ class Custom2_with_SVD(Custom2, WithSVD):
 SVMRegister['Custom2_with_SVD'] = Custom2_with_SVD
 
 
-class Custom3(Word2VecBase, WithCustom3):
+class Custom3(Word2VecBase, emb.WithCustom3):
     def load_resources(self):
         super().load_resources()
         self.word2vec = self.custom3
