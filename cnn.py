@@ -20,7 +20,9 @@ if 'logger' not in locals():
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
 
-from base import FullPipeline, Dataset, preprocess
+from base import FullPipeline, preprocess
+from reader import Dataset  # We need this import because we're loading
+                            # a Dataset with pickle
 from utils import eval_with_semeval_script
 from sklearn import metrics
 import resources as res

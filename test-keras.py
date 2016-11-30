@@ -28,7 +28,9 @@ if 'logger' not in locals():
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
 
-from svm import NRCCanada, Dataset
+from svm import NRCCanada
+from reader import Dataset  # We need this import because we're loading
+                            # a Dataset with pickle
 import reader as Reader
 import resources as res
 import features as feat
