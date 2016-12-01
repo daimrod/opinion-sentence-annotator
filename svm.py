@@ -61,14 +61,13 @@ if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
-    logger.addHandler(sh)
 
     # FileHandler
     fh = logging.FileHandler('log.txt', 'a')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
 
+    logger.handlers = [sh, fh]
 
 class SmallPipeline(FullPipeline):
     def __init__(self,

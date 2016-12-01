@@ -20,13 +20,13 @@ if 'logger' not in locals():
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
-    logger.addHandler(sh)
 
     # FileHandler
     fh = logging.FileHandler('log.txt', 'a')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+
+    logger.handlers = [sh, fh]
 
 from svm import NRCCanada
 from reader import Dataset  # We need this import because we're loading
