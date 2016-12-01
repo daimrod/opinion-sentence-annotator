@@ -221,7 +221,7 @@ CNNRegister['CNNChengGuo'] = CNNChengGuo
 class CNNChengGuo_Custom0(CNNChengGuo, emb.Custom0):
     def load_resources(self):
         super().load_resources()
-        self.load_custom0()
+        self.custom0 = emb.get_custom0()
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         self.embeddings_index = {}
