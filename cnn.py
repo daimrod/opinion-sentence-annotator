@@ -218,9 +218,10 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
 CNNRegister['CNNChengGuo'] = CNNChengGuo
 
 
-class CNNChengGuo_Custom0(CNNChengGuo, emb.WithCustom0):
+class CNNChengGuo_Custom0(CNNChengGuo, emb.Custom0):
     def load_resources(self):
         super().load_resources()
+        self.load_custom0()
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         self.embeddings_index = {}

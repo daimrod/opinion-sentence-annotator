@@ -452,9 +452,10 @@ class WithSVD(Word2VecBase):
         el[1].steps.append(['SVD', TruncatedSVD(n_components=self.n_components)])
 
 
-class Custom0(Word2VecBase, emb.WithCustom0):
+class Custom0(Word2VecBase, emb.Custom0):
     def load_resources(self):
         super().load_resources()
+        self.load_custom0()
         self.word2vec = self.custom0
 SVMRegister['Custom0'] = Custom0
 
@@ -464,9 +465,10 @@ class Custom0_with_SVD(Custom0, WithSVD):
 SVMRegister['Custom0_with_SVD'] = Custom0_with_SVD
 
 
-class GNews(Word2VecBase, emb.WithGNews):
+class GNews(Word2VecBase, emb.GNews):
     def load_resources(self):
         super().load_resources()
+        self.load_gnews()
         self.word2vec = self.gnews
 SVMRegister['GNews'] = GNews
 
@@ -476,9 +478,10 @@ class GNews_with_SVD(GNews, WithSVD):
 SVMRegister['GNews'] = GNews_with_SVD
 
 
-class Custom1(Word2VecBase, emb.WithCustom1):
+class Custom1(Word2VecBase, emb.Custom1):
     def load_resources(self):
         super().load_resources()
+        self.load_custom1()
         self.word2vec = self.custom1
 SVMRegister['Custom1'] = Custom1
 
@@ -488,9 +491,10 @@ class Custom1_with_SVD(Custom1, WithSVD):
 SVMRegister['Custom1_with_SVD'] = Custom1_with_SVD
 
 
-class Custom2(Word2VecBase, emb.WithCustom2):
+class Custom2(Word2VecBase, emb.Custom2):
     def load_resources(self):
         super().load_resources()
+        self.load_custom2()
         self.word2vec = self.custom2
 SVMRegister['Custom1'] = Custom2
 
@@ -500,9 +504,10 @@ class Custom2_with_SVD(Custom2, WithSVD):
 SVMRegister['Custom2_with_SVD'] = Custom2_with_SVD
 
 
-class Custom3(Word2VecBase, emb.WithCustom3):
+class Custom3(Word2VecBase, emb.Custom3):
     def load_resources(self):
         super().load_resources()
+        self.load_custom3()
         self.word2vec = self.custom3
 SVMRegister['Custom1'] = Custom3
 

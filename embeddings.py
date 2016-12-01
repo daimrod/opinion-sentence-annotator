@@ -31,21 +31,20 @@ if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
-    logger.addHandler(sh)
 
     # FileHandler
     fh = logging.FileHandler('log.txt', 'a')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+
+    logger.handlers = [sh, fh]
 
 
-class WithCustom0(FullPipeline):
+class Custom0(FullPipeline):
     """This method adds a word2vec model projection to NRCCanada.
     """
-    def load_resources(self):
-        super().load_resources()
-        logger.info('Load word2vec model')
+    def load_custom0(self):
+        logger.info('Load custom0 model')
         self.custom0_path = res.twitter_logger_en_path + '.word2vec'
         if os.path.exists(self.custom0_path) and os.path.getmtime(self.custom0_path) > os.path.getmtime(res.twitter_logger_en_path):
             self.custom0 = gensim.models.Word2Vec.load(self.custom0_path)
@@ -60,9 +59,9 @@ class WithCustom0(FullPipeline):
             self.custom0.save(self.custom0_path)
 
 
-class WithCustom1(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
+class Custom1(FullPipeline):
+    def load_custom1(self):
+        logger.info('Load custom1 model')
         self.custom1_path = res.twitter_logger_en_path + '.word2vec.custom1'
         if os.path.exists(self.custom1_path) and os.path.getmtime(self.custom1_path) > os.path.getmtime(res.twitter_logger_en_path):
             self.custom1 = gensim.models.Word2Vec.load(self.custom1_path)
@@ -79,9 +78,9 @@ class WithCustom1(FullPipeline):
             self.custom1.save(self.custom1_path)
 
 
-class WithCustom2(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
+class Custom2(FullPipeline):
+    def load_custom2(self):
+        logger.info('Load custom2 model')
         self.custom2_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
         if os.path.exists(self.custom2_path) and os.path.getmtime(self.custom2_path) > os.path.getmtime(res.twitter_logger_en_path):
             self.custom2 = gensim.models.Word2Vec.load_word2vec_format(self.custom2_path, binary=False)
@@ -90,9 +89,9 @@ class WithCustom2(FullPipeline):
             raise ValueError
 
 
-class WithCustom3(FullPipeline):
-    def load_resources(self):
-        super().load_resources()
+class Custom3(FullPipeline):
+    def load_custom3(self):
+        logger.info('Load custom3 model')
         self.custom3_path = '/tmp/word2vec.custom3.txt'
         if os.path.exists(self.custom3_path) and os.path.getmtime(self.custom3_path) > os.path.getmtime(res.twitter_logger_en_path):
             self.custom3 = gensim.models.Word2Vec.load_word2vec_format(self.custom3_path, binary=False)
@@ -101,11 +100,10 @@ class WithCustom3(FullPipeline):
             raise ValueError
 
 
-class WithGNews(FullPipeline):
+class GNews(FullPipeline):
     """This method loads a gnews model.
     """
-    def load_resources(self):
-        super().load_resources()
+    def load_gnews(self):
         logger.info('Load gnews model')
         self.gnews_path = res.gnews_negative300_path
         if os.path.exists(self.gnews_path) and os.path.getmtime(self.gnews_path) > os.path.getmtime(res.twitter_logger_en_path):
