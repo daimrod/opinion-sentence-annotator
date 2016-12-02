@@ -62,12 +62,12 @@ def build_custom0(train_path, saved_model_path, word2vec_param={}):
 
     This is the 0 method, that is the baseline method."""
     logger.info('Build custom0 model')
-    reader = TwitterLoggerTextReader(train_path)
-    reader = URLReplacer(reader)
-    reader = UserNameReplacer(reader)
-    reader = Tokenizer(reader, feat.happyfuntokenizer)
-    reader = Splitter(reader)
-    return gensim.models.Word2Vec(reader, **word2vec_param)
+    source = TwitterLoggerTextReader(train_path)
+    source = URLReplacer(source)
+    source = UserNameReplacer(source)
+    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = Splitter(source)
+    return gensim.models.Word2Vec(source, **word2vec_param)
 get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
 
 
@@ -75,13 +75,13 @@ def build_custom1(train_path, saved_model_path,
                   lexicon,
                   word2vec_param={}):
     logger.info('Train custom1 model')
-    reader = TwitterLoggerTextReader(train_path)
-    reader = URLReplacer(reader)
-    reader = UserNameReplacer(reader)
-    reader = Tokenizer(reader, feat.happyfuntokenizer)
-    reader = Splitter(reader)
-    reader = LexiconProjecter(reader, lexicon)
-    return gensim.models.Word2Vec(reader, **word2vec_param)
+    source = TwitterLoggerTextReader(train_path)
+    source = URLReplacer(source)
+    source = UserNameReplacer(source)
+    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = Splitter(source)
+    source = LexiconProjecter(source, lexicon)
+    return gensim.models.Word2Vec(source, **word2vec_param)
 get_custom1 = make_get_model(build_custom1, '.word2vec.custom1')
 
 
