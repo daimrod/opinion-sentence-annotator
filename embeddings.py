@@ -46,11 +46,12 @@ def make_get_model(build_function, name):
     def helper(train_path=res.twitter_logger_en_path,
                saved_model_path=res.twitter_logger_en_path + name,
                word2vec_param={},
-               force=False):
+               force=False,
+               **kwargs):
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
-            model = build_function(train_path, saved_model_path, word2vec_param)
+            model = build_function(train_path, saved_model_path, word2vec_param=word2vec_param, **kwargs)
             model.init_sims(replace=True)
             model.save(saved_model_path)
         return model
@@ -72,8 +73,10 @@ get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
 
 
 def build_custom1(train_path, saved_model_path,
-                  lexicon,
-                  word2vec_param={}):
+                  word2vec_param={},
+                  lexicon=None):
+    if lexicon is None:
+        raise ValueError('Empty lexicon')
     logger.info('Train custom1 model')
     source = TwitterLoggerTextReader(train_path)
     source = URLReplacer(source)
