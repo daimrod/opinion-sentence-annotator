@@ -479,7 +479,10 @@ SVMRegister['GNews'] = GNews_with_SVD
 class Custom1(Word2VecBase):
     def load_resources(self):
         super().load_resources()
-        self.word2vec = emb.get_custom1(self.word2vec_param)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        self.word2vec = emb.get_custom1(word2vec_param=self.word2vec_param,
+                                        lexicon=self.bing_liu_lexicon)
 SVMRegister['Custom1'] = Custom1
 
 
