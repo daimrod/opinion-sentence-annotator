@@ -124,10 +124,15 @@ class CNNBase(FullPipeline):
             self.train = pickle.load(p_file)
         with open(preprocess(res.test_path, force=self.repreprocess), 'rb') as p_file:
             self.test = pickle.load(p_file)
+
+        with open(preprocess(res.dev_path, force=self.repreprocess), 'rb') as p_file:
+            self.dev = pickle.load(p_file)
+
         self.train.truncate(self.train_truncate)
         self.test.truncate(self.test_truncate)
         self.train.filter_label(self.train_only_labels)
         self.test.filter_label(self.test_only_labels)
+        self.dev.filter_label(self.test_only_labels)
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
 
@@ -140,6 +145,10 @@ class CNNBase(FullPipeline):
         self.tokenizer = Tokenizer(nb_words=self.max_nb_words)
         self.tokenizer.fit_on_texts(self.texts)
         self.sequences = self.tokenizer.texts_to_sequences(self.texts)
+
+        self.dev_texts = [d['tok'] for d in self.dev.data]
+        self.dev_sequences = self.tokenizer.texts_to_sequences(self.dev_texts)
+        self.dev_data = pad_sequences(self.dev_sequences, maxlen=self.max_sequence_length)
 
         self.word_index = self.tokenizer.word_index
         logger.info('Found %s unique tokens.', len(self.word_index))
@@ -167,7 +176,7 @@ class CNNBase(FullPipeline):
         x = MaxPooling1D(35)(x)  # global max pooling
         x = Flatten()(x)
         x = Dense(128, activation='relu')(x)
-        self.preds = Dense(len(self.labels_index), activation='softmax')(x)
+        self.preds = [Dense(len(self.labels_index), activation='softmax')(x)]
 
         self.model = Model(self.sequence_input, self.preds)
         self.model.compile(loss='categorical_crossentropy',
@@ -175,35 +184,37 @@ class CNNBase(FullPipeline):
                            metrics=['acc'])
 
     def run_train(self):
-        super().run_train()
-        self.model.fit(self.train_data, self.labels,
+        self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                       validation_data=(self.dev_data, to_categorical(self.dev.target)),
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
-                       callbacks=[TestEpoch(self)],
+                       verbose=2,
+                       # callbacks=[TestEpoch(self)],
                        shuffle=self.shuffle)
 
     def run_test(self):
-        super().run_test()
         self.test_texts = [d['tok'] for d in self.test.data]
         self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
         self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
         logger.info('Shape of data tensor: %s', self.test_data.shape)
-        self.t_predicted = self.model.predict(self.test_data, verbose=1)
-        if self.t_predicted.shape[-1] > 1:
-            self.predicted = self.t_predicted.argmax(axis=-1)
-        else:
-            self.predicted = (self.t_predicted > 0.5).astype('int32')
+        self.predicted = [None] * len(self.preds)
+        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=2)):
+            if t_predicted.shape[-1] > 1:
+                self.predicted[i] = t_predicted.argmax(axis=-1)
+            else:
+                self.predicted[i] = (t_predicted > 0.5).astype('int32')
 
     def print_results(self):
-        super().print_results()
-        logger.info('\n' +
-                    metrics.classification_report(self.test.target, self.predicted,
-                                                  target_names=self.test.labels))
-
-        try:
+        for (i, predicted) in enumerate(self.predicted):
             logger.info('\n' +
-                        eval_with_semeval_script(self.test, self.predicted))
-        except:
-            pass
+                        'Output number : %d\n' % i +
+                        metrics.classification_report(self.test.target, predicted,
+                                                      target_names=self.test.labels))
+
+            try:
+                logger.info('\n' +
+                            eval_with_semeval_script(self.test, predicted))
+            except:
+                pass
 CNNRegister['CNNBase'] = CNNBase
 
 
@@ -238,7 +249,7 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
             ngram_filters.append(x1)
         x = merge(ngram_filters, mode='concat')
         x = Dropout(self.dropout)(x)
-        self.preds = Dense(len(self.labels_index), activation='sigmoid')(x)
+        self.preds = [Dense(len(self.labels_index), activation='sigmoid')(x)]
         self.model = Model(self.sequence_input, self.preds)
 
         print('model built')
@@ -300,7 +311,7 @@ class CNNRouvierBaseline(CNNBase):
         x = merge(ngram_filters, mode='concat')
         x = Dropout(self.dropout)(x)
 
-        self.preds = Dense(len(self.labels_index), activation='softmax')(x)
+        self.preds = [Dense(len(self.labels_index), activation='softmax')(x)]
         self.model = Model(self.sequence_input, self.preds)
 
         print('model built')
@@ -380,7 +391,7 @@ class CNNRouvier2016(CNNBase):
 
         adadelta = SGD(lr=0.005, momentum=0.7, decay=1e-06, nesterov=True)
 
-        self.preds = [output1, output2, output3]
+        self.preds = [output1]
         self.model = Model(self.sequence_input, self.preds)
 
         print('model built')
@@ -389,37 +400,6 @@ class CNNRouvier2016(CNNBase):
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=adadelta,
                            metrics=['acc'])
-
-    def run_train(self):
-        self.model.fit(self.train_data, [self.labels] * len(self.preds),
-                       nb_epoch=self.nb_epoch, batch_size=self.batch_size,
-                       callbacks=[TestEpoch(self)],
-                       shuffle=self.shuffle)
-
-    def run_test(self):
-        self.test_texts = [d['tok'] for d in self.test.data]
-        self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
-        self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
-        logger.info('Shape of data tensor: %s', self.test_data.shape)
-        self.predicted = [None] * len(self.preds)
-        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
-            if t_predicted.shape[-1] > 1:
-                self.predicted[i] = t_predicted.argmax(axis=-1)
-            else:
-                self.predicted[i] = (t_predicted > 0.5).astype('int32')
-
-    def print_results(self):
-        for (i, predicted) in enumerate(self.predicted):
-            logger.info('\n' +
-                        'Output number : %d\n' % i +
-                        metrics.classification_report(self.test.target, predicted,
-                                                      target_names=self.test.labels))
-
-            try:
-                logger.info('\n' +
-                            eval_with_semeval_script(self.test, predicted))
-            except:
-                pass
 CNNRegister['Rouvier2016'] = CNNRouvier2016
 
 
