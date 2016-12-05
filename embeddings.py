@@ -98,6 +98,38 @@ def get_custom2():
         raise ValueError
 
 
+def build_custom2(train_path,
+                  word2vec_param={},
+                  lexicon=None):
+    """Build a Word2Vec model using SWE method (optimization with
+inequalities)."""
+    if lexicon is None:
+        raise ValueError('Empty lexicon')
+    # The train corpus in a file
+    # The vocab in a file
+    # Some parameters
+    # The path to SWE_Train exec
+    source = TwitterLoggerTextReader(train_path)
+    source = URLReplacer(source)
+    source = UserNameReplacer(source)
+    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = Splitter(source)
+    input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    vocab_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    vocab = Counter()
+    for line in source:
+        vocab.update(line)
+        input_file.write(' '.join(line))
+        input_file.write('\n')
+    input_file.close()
+    vocab = OrderedDict(sorted(vocab.items(), key=lambda t: t[1], reverse=True))
+    for word in vocab:
+        vocab_file.write('%s\t%d\n' % (word, vocab[word]))
+    vocab_file.close()
+    print(input_file.name)
+    print(vocab_file.name)
+    return None
+
 def get_custom3():
     logger.info('Load custom3 model')
     saved_model_path = '/tmp/word2vec.custom3.txt'
