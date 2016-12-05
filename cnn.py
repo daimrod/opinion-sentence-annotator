@@ -37,6 +37,7 @@ from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.layers import Convolution1D
 from keras.layers import Dropout, merge
 from keras.models import Model
+from keras.optimizers import Adadelta
 
 from keras.callbacks import BaseLogger
 
@@ -128,7 +129,6 @@ class CNNBase(FullPipeline):
             self.test.filter_label(self.test_only_labels)
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
-
 
         self.texts = [d['tok'] for d in self.train.data]
         self.labels_index = dict([(name, nid) for nid, name in enumerate(self.train.labels)])
@@ -269,3 +269,43 @@ class CNNChengGuo_Gnews(CNNChengGuo):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_gnews()
 CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
+
+
+class CNNRouvierBaseline(CNNBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embedding_dim = 100
+        self.max_nb_words = 50000
+        self.max_sequence_length = 100
+        self.nb_filter = 500
+        self.ngram_filters = [1, 2, 3, 4, 5]
+        self.dropout = 0.4
+
+    def build_pipeline(self):
+        super.build_pipeline()
+        self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
+        self.embedded_sequences = self.embedding_layer(self.sequence_input)
+        x = self.embedded_sequences
+        ngram_filters = []
+        for n_gram in self.ngram_filters:
+            x1 = Convolution1D(nb_filter=self.nb_filter,
+                               filter_length=n_gram,
+                               border_mode='valid',
+                               activation='relu')(x)
+            x1 = MaxPooling1D(pool_length=self.max_sequence_length - n_gram + 1,
+                              stride=None,
+                              border_mode='valid')(x1)
+            ngram_filters.append(x1)
+        x = merge(ngram_filters, mode='concat')
+        x = Dropout(self.dropout)(x1)
+
+        self.preds = Dense(len(self.labels_index), activation='softmax')(x)
+        self.model = Model(self.sequence_input, self.preds)
+
+        print('model built')
+        print(self.model.summary())
+        adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer=adadelta,
+                           metrics=['acc'])
+CNNRegister['Rouvier_base'] = CNNRouvierBaseline
