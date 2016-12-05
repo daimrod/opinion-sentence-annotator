@@ -24,6 +24,7 @@ import embeddings as emb
 from base import FullPipeline, preprocess
 from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
+from reader import read_bing_liu
 from utils import eval_with_semeval_script
 from sklearn import metrics
 import resources as res
@@ -81,10 +82,9 @@ class CNNBase(FullPipeline):
         self.max_nb_words = max_nb_words
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
-        self.get_embedding = None
+        self.embedding = None
 
     def load_fixed_embedding(self):
-        self.embedding = self.get_embedding()
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         self.embeddings_index = {}
@@ -149,7 +149,7 @@ class CNNBase(FullPipeline):
         logger.info('Shape of label tensor: %s', self.labels.shape)
         logger.info('label index: %s', self.labels_index)
 
-        if self.get_embedding is None:
+        if self.embedding is None:
             self.load_trainable_embedding()
         else:
             self.load_fixed_embedding()
@@ -251,19 +251,21 @@ CNNRegister['CNNChengGuo'] = CNNChengGuo
 class CNNChengGuo_Custom0(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_custom0
+        self.embedding = emb.get_custom0()
 CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
 
 
 class CNNChengGuo_Custom1(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_custom1
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
 CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
 
 
 class CNNChengGuo_Gnews(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_gnews
+        self.embedding = emb.get_gnews()
 CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
