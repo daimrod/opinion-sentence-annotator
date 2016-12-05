@@ -309,3 +309,26 @@ class CNNRouvierBaseline(CNNBase):
                            optimizer=adadelta,
                            metrics=['acc'])
 CNNRegister['Rouvier_base'] = CNNRouvierBaseline
+
+
+class CNNRouvierBaseline_custom0(CNNRouvierBaseline):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embedding = emb.get_custom0()
+CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline
+
+
+class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
+CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline
+
+
+class CNNRouvierBaseline_gnews(CNNRouvierBaseline):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embedding = emb.get_gnews()
+CNNRegister['Rouvier_base_gnews'] = CNNRouvierBaseline
