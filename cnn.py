@@ -38,6 +38,7 @@ from keras.layers import Convolution1D
 from keras.layers import Dropout, merge
 from keras.models import Model
 from keras.optimizers import Adadelta
+from keras.optimizers import SGD
 
 from keras.callbacks import BaseLogger
 
@@ -332,3 +333,114 @@ class CNNRouvierBaseline_gnews(CNNRouvierBaseline):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_gnews()
 CNNRegister['Rouvier_base_gnews'] = CNNRouvierBaseline
+
+
+class CNNRouvier2016(CNNBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.embedding_dim = 100
+        self.max_nb_words = 50000
+        self.max_sequence_length = 100
+        self.nb_filter = 500
+        self.ngram_filters = [1, 2, 3, 4, 5]
+        self.ngram_filters_extended = [1, 2, 3, 4, 5, 6]
+        self.dropout = 0.4
+
+    def build_pipeline(self):
+        self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
+        self.embedded_sequences = self.embedding_layer(self.sequence_input)
+        model_input = self.embedded_sequences
+        output3 = Flatten()(model_input)
+        output3 = Dense(200, activation='relu')(output3)
+        output3 = Dropout(self.dropout)(output3)
+        output3 = Dense(3, activation='softmax')(output3)
+
+        ngram_filters = []
+        for n_gram in self.ngram_filters:
+            x1 = Convolution1D(nb_filter=self.nb_filter,
+                               filter_length=n_gram,
+                               border_mode='valid',
+                               activation='relu')(model_input)
+            x1 = MaxPooling1D(pool_length=self.max_sequence_length - n_gram + 1,
+                              stride=None)(x1)
+            x1 = Flatten()(x1)
+            ngram_filters.append(x1)
+
+        x = merge(ngram_filters, mode='concat')
+        dropout = Dropout(self.dropout)(x)
+
+        x = Dense(512, activation='relu')(dropout)
+        dropout_hd1 = Dropout(self.dropout)(x)
+
+        x = Dense(512, activation='relu')(dropout_hd1)
+        dropout_hd2 = Dropout(self.dropout)(x)
+
+        output1 = Dense(3, activation='softmax')(x)
+        output2 = Dense(3, activation='softmax')(dropout_hd2)
+
+        adadelta = SGD(lr=0.005, momentum=0.7, decay=1e-06, nesterov=True)
+
+        self.preds = [output1, output2, output3]
+        self.model = Model(self.sequence_input, self.preds)
+
+        print('model built')
+        print(self.model.summary())
+        adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer=adadelta,
+                           metrics=['acc'])
+
+    def run_train(self):
+        self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                       nb_epoch=self.nb_epoch, batch_size=self.batch_size,
+                       callbacks=[TestEpoch(self)],
+                       shuffle=self.shuffle)
+
+    def run_test(self):
+        self.test_texts = [d['tok'] for d in self.test.data]
+        self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
+        self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
+        logger.info('Shape of data tensor: %s', self.test_data.shape)
+        self.predicted = [None] * len(self.preds)
+        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
+            if t_predicted.shape[-1] > 1:
+                self.predicted[i] = t_predicted.argmax(axis=-1)
+            else:
+                self.predicted[i] = (t_predicted > 0.5).astype('int32')
+
+    def print_results(self):
+        for (i, predicted) in enumerate(self.predicted):
+            logger.info('\n' +
+                        'Output number : %d\n' % i +
+                        metrics.classification_report(self.test.target, predicted,
+                                                      target_names=self.test.labels))
+
+            try:
+                logger.info('\n' +
+                            eval_with_semeval_script(self.test, predicted))
+            except:
+                pass
+CNNRegister['Rouvier2016'] = CNNRouvier2016
+
+
+class CNNRouvier2016_custom0(CNNRouvier2016):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embedding = emb.get_custom0()
+CNNRegister['Rouvier_base_custom0'] = CNNRouvier2016
+
+
+class CNNRouvier2016_custom1(CNNRouvier2016):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
+CNNRegister['Rouvier_base_custom1'] = CNNRouvier2016
+
+
+class CNNRouvier2016_gnews(CNNRouvier2016):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embedding = emb.get_gnews()
+CNNRegister['Rouvier_base_gnews'] = CNNRouvier2016
