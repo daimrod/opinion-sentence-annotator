@@ -82,6 +82,38 @@ class CNNBase(FullPipeline):
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
 
+    def load_fixed_embedding(self):
+        self.embedding = self.get_embedding()
+        logger.info('Preparing embedding matrix.')
+        self.nb_words = min(self.max_nb_words, len(self.word_index))
+        self.embeddings_index = {}
+        self.embedding_dim = self.embedding.syn0.shape[1]
+        self.embedding_matrix = np.zeros((self.nb_words + 1,
+                                          self.embedding_dim))
+        for word, i in self.word_index.items():
+            if i > self.max_nb_words:
+                continue
+            if word in self.embedding:
+                # words not found in embedding index will be all-zeros.
+                self.embedding_matrix[i] = self.embedding[word]
+
+        # load pre-trained word embeddings into an Embedding layer
+        # note that we set trainable = False so as to keep the embeddings fixed
+        self.embedding_layer = Embedding(self.nb_words + 1,
+                                         self.embedding_dim,
+                                         weights=[self.embedding_matrix],
+                                         input_length=self.max_sequence_length,
+                                         trainable=False)
+
+    def load_trainable_embedding(self):
+        self.nb_words = min(self.max_nb_words, len(self.word_index))
+        # load pre-trained word embeddings into an Embedding layer
+        # note that we set trainable = False so as to keep the embeddings fixed
+        self.embedding_layer = Embedding(self.nb_words + 1,
+                                         self.embedding_dim,
+                                         input_length=self.max_sequence_length,
+                                         trainable=True)
+
     def load_resources(self):
         super().load_resources()
         logger.info('Load the corpus')
@@ -116,13 +148,10 @@ class CNNBase(FullPipeline):
         logger.info('Shape of label tensor: %s', self.labels.shape)
         logger.info('label index: %s', self.labels_index)
 
-        self.nb_words = min(self.max_nb_words, len(self.word_index))
-        # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
-        self.embedding_layer = Embedding(self.nb_words + 1,
-                                         self.embedding_dim,
-                                         input_length=self.max_sequence_length,
-                                         trainable=True)
+        if self.get_embedding is None:
+            self.load_trainable_embedding()
+        else:
+            self.load_fixed_embedding()
 
     def build_pipeline(self):
         super().build_pipeline()
@@ -219,79 +248,21 @@ CNNRegister['CNNChengGuo'] = CNNChengGuo
 
 
 class CNNChengGuo_Custom0(CNNChengGuo):
-    def load_resources(self):
-        super().load_resources()
-        self.custom0 = emb.get_custom0()
-        logger.info('Preparing embedding matrix.')
-        self.nb_words = min(self.max_nb_words, len(self.word_index))
-        self.embeddings_index = {}
-        self.embedding_dim = self.custom0.syn0.shape[1]
-        self.embedding_matrix = np.zeros((self.nb_words + 1,
-                                          self.embedding_dim))
-        for word, i in self.word_index.items():
-            if i > self.max_nb_words:
-                continue
-            if word in self.custom0:
-                # words not found in embedding index will be all-zeros.
-                self.embedding_matrix[i] = self.custom0[word]
-
-        # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
-        self.embedding_layer = Embedding(self.nb_words + 1,
-                                         self.embedding_dim,
-                                         weights=[self.embedding_matrix],
-                                         input_length=self.max_sequence_length,
-                                         trainable=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.get_embedding = emb.get_custom0()
 CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
 
-class CNNChengGuo_Custom1(CNNChengGuo):
-    def load_resources(self):
-        super().load_resources()
-        self.custom1 = emb.get_custom1()
-        logger.info('Preparing embedding matrix.')
-        self.nb_words = min(self.max_nb_words, len(self.word_index))
-        self.embeddings_index = {}
-        self.embedding_dim = self.custom1.syn0.shape[1]
-        self.embedding_matrix = np.zeros((self.nb_words + 1,
-                                          self.embedding_dim))
-        for word, i in self.word_index.items():
-            if i > self.max_nb_words:
-                continue
-            if word in self.custom1:
-                # words not found in embedding index will be all-zeros.
-                self.embedding_matrix[i] = self.custom1[word]
 
-        # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
-        self.embedding_layer = Embedding(self.nb_words + 1,
-                                         self.embedding_dim,
-                                         weights=[self.embedding_matrix],
-                                         input_length=self.max_sequence_length,
-                                         trainable=False)
+class CNNChengGuo_Custom1(CNNChengGuo):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.get_embedding = emb.get_custom1()
 CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
 
-class CNNChengGuo_Gnews(CNNChengGuo):
-    def load_resources(self):
-        super().load_resources()
-        self.gnews = emb.get_gnews()
-        logger.info('Preparing embedding matrix.')
-        self.nb_words = min(self.max_nb_words, len(self.word_index))
-        self.embeddings_index = {}
-        self.embedding_dim = self.gnews.syn0.shape[1]
-        self.embedding_matrix = np.zeros((self.nb_words + 1,
-                                          self.embedding_dim))
-        for word, i in self.word_index.items():
-            if i > self.max_nb_words:
-                continue
-            if word in self.gnews:
-                # words not found in embedding index will be all-zeros.
-                self.embedding_matrix[i] = self.gnews[word]
 
-        # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
-        self.embedding_layer = Embedding(self.nb_words + 1,
-                                         self.embedding_dim,
-                                         weights=[self.embedding_matrix],
-                                         input_length=self.max_sequence_length,
-                                         trainable=False)
+class CNNChengGuo_Gnews(CNNChengGuo):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.get_embedding = emb.get_gnews()
 CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
