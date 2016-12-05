@@ -184,6 +184,7 @@ class CNNBase(FullPipeline):
                            metrics=['acc'])
 
     def run_train(self):
+        super().run_train()
         self.model.fit(self.train_data, [self.labels] * len(self.preds),
                        validation_data=(self.dev_data, to_categorical(self.dev.target)),
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
@@ -192,29 +193,49 @@ class CNNBase(FullPipeline):
                        shuffle=self.shuffle)
 
     def run_test(self):
+        super().run_test()
         self.test_texts = [d['tok'] for d in self.test.data]
         self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
         self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
         logger.info('Shape of data tensor: %s', self.test_data.shape)
-        self.predicted = [None] * len(self.preds)
-        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
+
+        if len(self.preds) == 1:
+            t_predicted = self.model.predict(self.test_data, verbose=1)
             if t_predicted.shape[-1] > 1:
-                self.predicted[i] = t_predicted.argmax(axis=-1)
+                self.predicted = t_predicted.argmax(axis=-1)
             else:
-                self.predicted[i] = (t_predicted > 0.5).astype('int32')
+                self.predicted = (t_predicted > 0.5).astype('int32')
+        else:
+            self.predicted = [None] * len(self.preds)
+            for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
+                if t_predicted.shape[-1] > 1:
+                    self.predicted[i] = t_predicted.argmax(axis=-1)
+                else:
+                    self.predicted[i] = (t_predicted > 0.5).astype('int32')
 
     def print_results(self):
-        for (i, predicted) in enumerate(self.predicted):
+        super().print_results()
+        if len(self.preds) == 1:
             logger.info('\n' +
-                        'Output number : %d\n' % i +
-                        metrics.classification_report(self.test.target, predicted,
+                        metrics.classification_report(self.test.target, self.predicted,
                                                       target_names=self.test.labels))
-
             try:
                 logger.info('\n' +
-                            eval_with_semeval_script(self.test, predicted))
+                            eval_with_semeval_script(self.test, self.predicted))
             except:
                 pass
+        else:
+            for (i, predicted) in enumerate(self.predicted):
+                logger.info('\n' +
+                            'Output number : %d\n' % i +
+                            metrics.classification_report(self.test.target, predicted,
+                                                          target_names=self.test.labels))
+
+                try:
+                    logger.info('\n' +
+                                eval_with_semeval_script(self.test, predicted))
+                except:
+                    pass
 CNNRegister['CNNBase'] = CNNBase
 
 
