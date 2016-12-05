@@ -282,7 +282,6 @@ class CNNRouvierBaseline(CNNBase):
         self.dropout = 0.4
 
     def build_pipeline(self):
-        super().build_pipeline()
         self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
         self.embedded_sequences = self.embedding_layer(self.sequence_input)
         x = self.embedded_sequences
@@ -295,9 +294,10 @@ class CNNRouvierBaseline(CNNBase):
             x1 = MaxPooling1D(pool_length=self.max_sequence_length - n_gram + 1,
                               stride=None,
                               border_mode='valid')(x1)
+            x1 = Flatten()(x1)
             ngram_filters.append(x1)
         x = merge(ngram_filters, mode='concat')
-        x = Dropout(self.dropout)(x1)
+        x = Dropout(self.dropout)(x)
 
         self.preds = Dense(len(self.labels_index), activation='softmax')(x)
         self.model = Model(self.sequence_input, self.preds)
