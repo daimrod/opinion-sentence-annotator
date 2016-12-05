@@ -59,6 +59,7 @@ rouvier_test = os.path.join(semeval16, 'Task4', 'rouvier_twitter16.txt')
 
 # train_path = semeval16_polarity_train
 # test_path = semeval16_polarity_devtest
+dev_path = semeval16_polarity_devtest
 train_path = rouvier_train
 test_path = rouvier_test
 
