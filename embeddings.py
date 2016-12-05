@@ -7,8 +7,6 @@ import os
 
 import gensim
 
-from decorator import decorator
-
 from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
 from reader import TwitterLoggerTextReader
@@ -22,7 +20,9 @@ from reader import UserNameReplacer
 import features as feat
 import resources as res
 
-from base import FullPipeline
+import tempfile
+from collections import Counter
+from collections import OrderedDict
 
 if 'logger' not in locals() and logging.getLogger('__run__') is not None:
     logger = logging.getLogger(__name__)
@@ -51,14 +51,14 @@ def make_get_model(build_function, name):
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
-            model = build_function(train_path, saved_model_path, word2vec_param=word2vec_param, **kwargs)
+            model = build_function(train_path, word2vec_param=word2vec_param, **kwargs)
             model.init_sims(replace=True)
             model.save(saved_model_path)
         return model
     return helper
 
 
-def build_custom0(train_path, saved_model_path, word2vec_param={}):
+def build_custom0(train_path, word2vec_param={}):
     """Build a Word2Vec model without any information.
 
     This is the 0 method, that is the baseline method."""
