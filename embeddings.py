@@ -72,7 +72,7 @@ def build_custom0(train_path, word2vec_param={}):
 get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
 
 
-def build_custom1(train_path, saved_model_path,
+def build_custom1(train_path,
                   word2vec_param={},
                   lexicon=None):
     if lexicon is None:
