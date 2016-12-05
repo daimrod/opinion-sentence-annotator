@@ -218,7 +218,7 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
 CNNRegister['CNNChengGuo'] = CNNChengGuo
 
 
-class CNNChengGuo_Custom0(CNNChengGuo, emb.Custom0):
+class CNNChengGuo_Custom0(CNNChengGuo):
     def load_resources(self):
         super().load_resources()
         self.custom0 = emb.get_custom0()
@@ -243,3 +243,29 @@ class CNNChengGuo_Custom0(CNNChengGuo, emb.Custom0):
                                          input_length=self.max_sequence_length,
                                          trainable=False)
 CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
+
+class CNNChengGuo_Custom1(CNNChengGuo):
+    def load_resources(self):
+        super().load_resources()
+        self.custom1 = emb.get_custom1()
+        logger.info('Preparing embedding matrix.')
+        self.nb_words = min(self.max_nb_words, len(self.word_index))
+        self.embeddings_index = {}
+        self.embedding_dim = self.custom1.syn0.shape[1]
+        self.embedding_matrix = np.zeros((self.nb_words + 1,
+                                          self.embedding_dim))
+        for word, i in self.word_index.items():
+            if i > self.max_nb_words:
+                continue
+            if word in self.custom1:
+                # words not found in embedding index will be all-zeros.
+                self.embedding_matrix[i] = self.custom1[word]
+
+        # load pre-trained word embeddings into an Embedding layer
+        # note that we set trainable = False so as to keep the embeddings fixed
+        self.embedding_layer = Embedding(self.nb_words + 1,
+                                         self.embedding_dim,
+                                         weights=[self.embedding_matrix],
+                                         input_length=self.max_sequence_length,
+                                         trainable=False)
+CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
