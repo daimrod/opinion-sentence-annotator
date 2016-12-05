@@ -282,7 +282,7 @@ class CNNRouvierBaseline(CNNBase):
         self.dropout = 0.4
 
     def build_pipeline(self):
-        super.build_pipeline()
+        super().build_pipeline()
         self.sequence_input = Input(shape=(self.max_sequence_length,), dtype='int32')
         self.embedded_sequences = self.embedding_layer(self.sequence_input)
         x = self.embedded_sequences
