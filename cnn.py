@@ -274,7 +274,7 @@ CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
 class CNNRouvierBaseline(CNNBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.embedding_dim = 100
+        # self.embedding_dim = 100
         self.max_nb_words = 50000
         self.max_sequence_length = 100
         self.nb_filter = 500
