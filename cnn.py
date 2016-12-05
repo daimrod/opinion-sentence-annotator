@@ -187,7 +187,7 @@ class CNNBase(FullPipeline):
         self.model.fit(self.train_data, [self.labels] * len(self.preds),
                        validation_data=(self.dev_data, to_categorical(self.dev.target)),
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
-                       verbose=2,
+                       verbose=1,
                        # callbacks=[TestEpoch(self)],
                        shuffle=self.shuffle)
 
@@ -197,7 +197,7 @@ class CNNBase(FullPipeline):
         self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
         logger.info('Shape of data tensor: %s', self.test_data.shape)
         self.predicted = [None] * len(self.preds)
-        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=2)):
+        for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
             if t_predicted.shape[-1] > 1:
                 self.predicted[i] = t_predicted.argmax(axis=-1)
             else:
