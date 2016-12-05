@@ -81,6 +81,7 @@ class CNNBase(FullPipeline):
         self.max_nb_words = max_nb_words
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
+        self.get_embedding = None
 
     def load_fixed_embedding(self):
         self.embedding = self.get_embedding()
@@ -250,19 +251,19 @@ CNNRegister['CNNChengGuo'] = CNNChengGuo
 class CNNChengGuo_Custom0(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_custom0()
+        self.get_embedding = emb.get_custom0
 CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
 
 
 class CNNChengGuo_Custom1(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_custom1()
+        self.get_embedding = emb.get_custom1
 CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
 
 
 class CNNChengGuo_Gnews(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.get_embedding = emb.get_gnews()
+        self.get_embedding = emb.get_gnews
 CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
