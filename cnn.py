@@ -124,10 +124,10 @@ class CNNBase(FullPipeline):
             self.train = pickle.load(p_file)
         with open(preprocess(res.test_path, force=self.repreprocess), 'rb') as p_file:
             self.test = pickle.load(p_file)
-            self.train.truncate(self.train_truncate)
-            self.test.truncate(self.test_truncate)
-            self.train.filter_label(self.train_only_labels)
-            self.test.filter_label(self.test_only_labels)
+        self.train.truncate(self.train_truncate)
+        self.test.truncate(self.test_truncate)
+        self.train.filter_label(self.train_only_labels)
+        self.test.filter_label(self.test_only_labels)
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
 
