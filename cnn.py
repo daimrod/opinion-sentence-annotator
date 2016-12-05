@@ -246,14 +246,14 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='rmsprop',
                            metrics=['acc'])
-CNNRegister['CNNChengGuo'] = CNNChengGuo
+CNNRegister['CG'] = CNNChengGuo
 
 
 class CNNChengGuo_Custom0(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_custom0()
-CNNRegister['CG_Custom0'] = CNNChengGuo_Custom0
+CNNRegister['CG_custom0'] = CNNChengGuo_Custom0
 
 
 class CNNChengGuo_Custom1(CNNChengGuo):
@@ -262,14 +262,14 @@ class CNNChengGuo_Custom1(CNNChengGuo):
         self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                               res.bing_liu_lexicon_path['positive'])
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
-CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
+CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
 
 class CNNChengGuo_Gnews(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_gnews()
-CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
+CNNRegister['CG_gnews'] = CNNChengGuo_Gnews
 
 
 class CNNRouvierBaseline(CNNBase):
