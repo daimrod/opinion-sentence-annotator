@@ -269,3 +269,29 @@ class CNNChengGuo_Custom1(CNNChengGuo):
                                          input_length=self.max_sequence_length,
                                          trainable=False)
 CNNRegister['CG_Custom1'] = CNNChengGuo_Custom1
+
+class CNNChengGuo_Gnews(CNNChengGuo):
+    def load_resources(self):
+        super().load_resources()
+        self.gnews = emb.get_gnews()
+        logger.info('Preparing embedding matrix.')
+        self.nb_words = min(self.max_nb_words, len(self.word_index))
+        self.embeddings_index = {}
+        self.embedding_dim = self.gnews.syn0.shape[1]
+        self.embedding_matrix = np.zeros((self.nb_words + 1,
+                                          self.embedding_dim))
+        for word, i in self.word_index.items():
+            if i > self.max_nb_words:
+                continue
+            if word in self.gnews:
+                # words not found in embedding index will be all-zeros.
+                self.embedding_matrix[i] = self.gnews[word]
+
+        # load pre-trained word embeddings into an Embedding layer
+        # note that we set trainable = False so as to keep the embeddings fixed
+        self.embedding_layer = Embedding(self.nb_words + 1,
+                                         self.embedding_dim,
+                                         weights=[self.embedding_matrix],
+                                         input_length=self.max_sequence_length,
+                                         trainable=False)
+CNNRegister['CG_Gnews'] = CNNChengGuo_Gnews
