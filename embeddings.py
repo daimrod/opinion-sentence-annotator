@@ -5,6 +5,7 @@ import logging
 
 import os
 from subprocess import Popen, PIPE
+import tempfile
 
 from collections import Counter
 from collections import OrderedDict
@@ -24,8 +25,7 @@ from reader import LineReader
 
 import features as feat
 import resources as res
-
-import tempfile
+import utils
 
 default_word2vec_param = {
     # sg defines the training algorithm. By default (sg=0), CBOW is
@@ -198,61 +198,72 @@ def build_custom2(train_path,
 inequalities)."""
     if lexicon is None:
         raise ValueError('Empty lexicon')
-    # The train corpus in a file
-    # The vocab in a file
-    # Some parameters
-    # The path to SWE_Train exec
     model = None
     source = LineReader(train_path)
     source = URLReplacer(source)
     source = UserNameReplacer(source)
     source = Tokenizer(source, feat.happyfuntokenizer)
     source = Splitter(source)
+
     input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
     output_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
-    vocab_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
-    vocab = Counter()
     output_file.close()
-    for line in source:
-        vocab.update(line)
-        input_file.write(' '.join(line))
-        input_file.write('\n')
-    vocab = OrderedDict(sorted(vocab.items(), key=lambda t: t[1],
-                               reverse=True))
-    for word in vocab:
-        vocab_file.write('%s\t%d\n' % (word, vocab[word]))
-    vocab_file.close()
 
-    input_file.close()
-    p = Popen(['bin/SWE_Train',
-               '-train', train_path,
-               '-read-vocab', vocab_file.name,
-               '-output', output_file.name,
-               '-size', str(word2vec_param['size']),
-               '-window', str(word2vec_param['window']),
-               '-sample', str(word2vec_param['sample']),
-               '-hs', str(word2vec_param['hs']),
-               '-iter', str(word2vec_param['iter']),
-               '-min-count', str(word2vec_param['min_count']),
-               '-sem-train', os.path.join(res.SWE_PATH, 'semantics/TEXT8/SemWE.EN.KnowDB.COM1.inTEXT8.train'),
-               '-sem-valid', os.path.join(res.SWE_PATH, 'semantics/TEXT8/SemWE.EN.KnowDB.COM1.inTEXT8.valid')],
-              stdin=PIPE,
-              stdout=PIPE,
-              stderr=PIPE,
-              cwd=res.SWE_PATH)
-    out, err = p.communicate()
-    err = err.decode()
-    out = out.decode()
-    if p.returncode != 0:
-        logger.error(out)
-        logger.error(err)
-    else:
-        logger.info(out)
-        model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
-                                                            binary=False)
-    os.remove(vocab_file.name)
-    os.remove(input_file.name)
-    os.remove(output_file.name)
+    ineq_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    ineq_file.close()
+
+    vocab_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+
+    try:
+        vocab = Counter()
+        for line in source:
+            vocab.update(line)
+            input_file.write(' '.join(line))
+            input_file.write('\n')
+        vocab = OrderedDict(sorted(vocab.items(), key=lambda t: t[1],
+                                   reverse=True))
+        for word in vocab:
+            vocab_file.write('%s\t%d\n' % (word, vocab[word]))
+        vocab_file.close()
+
+        feat.build_ineq(lexicon, ineq_file.name, vocab=list(vocab), truncate=400)
+        utils.split_train_valid(ineq_file.name)
+
+        input_file.close()
+        p = Popen(['bin/SWE_Train',
+                   '-train', train_path,
+                   '-read-vocab', vocab_file.name,
+                   '-output', output_file.name,
+                   '-size', str(word2vec_param['size']),
+                   '-window', str(word2vec_param['window']),
+                   '-sample', str(word2vec_param['sample']),
+                   '-hs', str(word2vec_param['hs']),
+                   '-iter', str(word2vec_param['iter']),
+                   '-min-count', str(word2vec_param['min_count']),
+                   '-sem-train', ineq_file.name + '.train',
+                   '-sem-valid', ineq_file.name + '.valid',
+                   ],
+                  stdin=PIPE,
+                  stdout=PIPE,
+                  stderr=PIPE,
+                  cwd=res.SWE_PATH)
+        out, err = p.communicate()
+        err = err.decode()
+        out = out.decode()
+        if p.returncode != 0:
+            logger.error(out)
+            logger.error(err)
+        else:
+            logger.info(out)
+            model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
+                                                                binary=False)
+    finally:
+        os.remove(vocab_file.name)
+        os.remove(input_file.name)
+        os.remove(output_file.name)
+        os.remove(ineq_file.name)
+        os.remove(ineq_file.name + '.train')
+        os.remove(ineq_file.name + '.valid')
     return model
 
 

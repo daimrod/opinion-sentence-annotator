@@ -13,6 +13,7 @@ import numpy
 import scipy
 import codecs
 import tempfile
+import random
 
 from subprocess import Popen, PIPE
 
@@ -23,6 +24,8 @@ from resources import SENNA_PATH
 import happyfuntokenizing
 from nltk.tokenize import TweetTokenizer
 import nltk
+
+import utils
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -125,14 +128,7 @@ class FindClosestInLexicon(object):
         self.topn = topn
         self.lower = lower
 
-        self.lexicon_inv = {}
-        for word_lex in lexicon:
-            if word_lex not in model:
-                continue
-            polarity = lexicon[word_lex]
-            if polarity not in self.lexicon_inv:
-                self.lexicon_inv[polarity] = []
-            self.lexicon_inv[polarity].append(model[word_lex])
+        self.lexicon_inv = utils.invert_dict_nonunique(lexicon)
 
     # def find_closest_in_lexicon(self, word):
     #     if word not in self.model:
@@ -828,3 +824,38 @@ the key and elements associated to key to keep.
             d[key] = ' '.join(new_val)
         return d
     __call__ = keep_on
+
+
+def build_ineq(lexicon, output_path, vocab=None, truncate=None):
+    """Write inequalities for SWE like models in output_path.
+
+    For each word of each class in lexicon, build inqualities like
+this :
+    lexicon['c1'][i] lexicon['c1'][j] lexicon['c1'][i] lexicon['c2'][l]
+
+    If vocab is supplied, do not build inequalities for words that
+aren't in the vocabulary.
+    """
+    with codecs.open(output_path, 'w+', 'utf-8') as ofile:
+        lexicon_inv = utils.invert_dict_nonunique(lexicon)
+        for (c1, c2) in itertools.combinations(lexicon_inv, 2):
+            lst_c1 = lexicon_inv[c1]
+            if vocab is not None:
+                for w in lst_c1:
+                    if w not in vocab:
+                        lst_c1.remove(w)
+            random.shuffle(lst_c1)
+            lst_c1 = lst_c1[:truncate]
+
+            lst_c2 = lexicon_inv[c2]
+            if vocab is not None:
+                for w in lst_c2:
+                    if w not in vocab:
+                        lst_c2.remove(w)
+            random.shuffle(lst_c2)
+            lst_c2 = lst_c2[:truncate]
+
+            for (c1_w1, c1_w2) in itertools.combinations(lst_c1, 2):
+                for c2_w1 in lst_c2:
+                    ofile.write('%s %s %s %s\n' % (c1_w1, c1_w2,
+                                                   c1_w1, c2_w1))

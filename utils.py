@@ -7,6 +7,8 @@ from sklearn.pipeline import Pipeline
 import tempfile
 from subprocess import PIPE, Popen
 import os
+import random
+import codecs
 from resources import SEMEVAL_SCORER_PATH
 
 
@@ -159,3 +161,37 @@ def assoc_value(lst, value):
     for (idx, el) in enumerate(lst):
         if el[0] == value:
             return el, idx
+
+
+def invert_dict_nonunique(d):
+    newdict = {}
+    for k in d:
+        newdict.setdefault(d[k], []).append(k)
+    return newdict
+
+
+def split_train_valid(input_path, valid_num=3000):
+    """Split a file in two (.valid and .train) with valid_num lines in
+.valid and everything else in .train.
+    """
+    train_path = input_path + '.train'
+    valid_path = input_path + '.valid'
+    nb_line = 0
+    with codecs.open(input_path, 'r', 'utf-8') as ifile:
+        nb_line = len([line for line in ifile])
+    valid_indexes = random.sample(range(nb_line), valid_num)
+    try:
+        ifile = codecs.open(input_path, 'r', 'utf-8')
+        train_file = codecs.open(train_path, 'w+', 'utf-8')
+        valid_file = codecs.open(valid_path, 'w+', 'utf-8')
+        idx = 0
+        for line in ifile:
+            if idx in valid_indexes:
+                valid_file.write(line)
+            else:
+                train_file.write(line)
+            idx += 1
+    finally:
+        ifile.close()
+        train_file.close()
+        valid_file.close()
