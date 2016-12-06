@@ -128,7 +128,14 @@ class FindClosestInLexicon(object):
         self.topn = topn
         self.lower = lower
 
-        self.lexicon_inv = utils.invert_dict_nonunique(lexicon)
+        self.lexicon_inv = {}
+        for word_lex in lexicon:
+            if word_lex not in model:
+                continue
+            polarity = lexicon[word_lex]
+            if polarity not in self.lexicon_inv:
+                self.lexicon_inv[polarity] = []
+            self.lexicon_inv[polarity].append(model[word_lex])
 
     # def find_closest_in_lexicon(self, word):
     #     if word not in self.model:
