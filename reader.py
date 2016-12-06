@@ -426,6 +426,16 @@ class TwitterLoggerTextReader(object):
             yield text
 
 
+class LineReader(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __iter__(self):
+        for line in codecs.open(self.filename, 'r', 'utf-8'):
+            line = line.strip()
+            yield line
+
+
 class Tokenizer(object):
     def __init__(self, iterable, tokenizer):
         self.iterable = iterable
