@@ -868,80 +868,80 @@ aren't in the vocabulary.
                                                    c1_w1, c2_w1))
 
 
-def find_ineq(model, lexicon, truncate=None):
+def find_ineq(model, lexicon,
+              output_path=None,
+              truncate=None,
+              top=None,
+              fmt_str='{c1_w1}\t{c1_w2}\t{c1_w1}\t{c2_w1}\n'):
     lexicon_inv = utils.invert_dict_nonunique(lexicon)
     ineq = []
     cpt = 0
-    for (c1, c2) in itertools.combinations(lexicon_inv, 2):
-        # c2, c1 = c1, c2
-        # All vectors of words in c1
-        c1_w = [w for w in lexicon_inv[c1][:truncate] if w in model]
-        c1_v = np.array([model[w] for w in c1_w])
-        # All vectors of words in c2
-        c2_w = [w for w in lexicon_inv[c2][:truncate] if w in model]
-        c2_v = np.array([model[w] for w in c2_w])
+    if output_path is not None:
+        ofile = codecs.open(output_path, 'w+', 'utf-8')
+    try:
+        for (c1, c2) in itertools.combinations(lexicon_inv, 2):
+            # c2, c1 = c1, c2
+            # All vectors of words in c1
+            c1_w = [w for w in lexicon_inv[c1][:truncate] if w in model]
+            c1_v = np.array([model[w] for w in c1_w])
+            # All vectors of words in c2
+            c2_w = [w for w in lexicon_inv[c2][:truncate] if w in model]
+            c2_v = np.array([model[w] for w in c2_w])
 
-        logger.info('c1_v = %s', c1_v.shape)
-        logger.info('c2_v = %s', c2_v.shape)
-        # Concatenate c1 and c2 vectors
-        c1_c2_v = np.append(c1_v, c2_v, 0)
+            logger.info('c1_v = %s', c1_v.shape)
+            logger.info('c2_v = %s', c2_v.shape)
+            # Concatenate c1 and c2 vectors
+            c1_c2_v = np.append(c1_v, c2_v, 0)
 
-        # The index of the first word of c2 in c1_c2_v
-        first_c2_i = c1_v.shape[0]
+            # The index of the first word of c2 in c1_c2_v
+            first_c2_i = c1_v.shape[0]
 
-        # The distances between each words in c1 to c1 and c2
-        cdist = scipy.spatial.distance.cdist(c1_v, c1_c2_v, metric='cosine')
-        # We only consider the strict upper triangle of the cdist
-        # matrix, everything under the diagonal have already been
-        # considered
-        cdist = np.triu(cdist, 1)
+            # The distances between each words in c1 to c1 and c2
+            cdist = scipy.spatial.distance.cdist(c1_v, c1_c2_v, metric='cosine')
+            # We only consider the strict upper triangle of the cdist
+            # matrix, everything under the diagonal have already been
+            # considered
+            cdist = np.triu(cdist, 1)
 
-        # The index of words distances ordered
-        sorted_cdist_idx = np.argsort(cdist)
+            # The index of words distances ordered
+            sorted_cdist_idx = np.argsort(cdist)
 
-        # Iter on rows (words of c1)
-        for i in range(c1_v.shape[0]):
-            if i % 10 == 0:
-                logger.info('%d/%d = %d', i, c1_v.shape[0], cpt)
-            start_recording = False
-            c2_to_reorder = []
-            c1_to_reorder = []
-            # Iter on columns (ordered index of dist(c1_v[i], c2_v))
-            for (idx_j, j) in enumerate(sorted_cdist_idx[i][i:]):
-                # If the current index is in c2
-                if j >= first_c2_i:
-                    # Star recording the next c1 words because they
-                    # should be before j
-                    start_recording = True
-                    # Store the c2 to reorder and the position from
-                    # which the next c1 words should be reordered
-                    c2_to_reorder.append([j, len(c1_to_reorder)])
-                # The current index is in c1
-                elif start_recording:
-                    # But there are c2 words before, store the c1
-                    # words that have to be reordered
-                    c1_to_reorder.append(j)
-            # Columns is over, generate the inequalities to reorder c1
-            # words before c2 words
+            # Iter on rows (words of c1)
+            for i in range(c1_v.shape[0]):
+                c1_to_reorder = []
+                c2_to_reorder = []
+                # Iter on columns (ordered index of dist(c1_v[i], c2_v))
+                for (idx_j, j) in enumerate(sorted_cdist_idx[i][i:]):
+                    idx_j += i
+                    # If the current index belongs to c2 but is in the c1 segment
+                    if j >= first_c2_i and idx_j < first_c2_i:
+                        # Save it
+                        c2_to_reorder.append(j)
+                    # If the current index belongs to c1 but is in the c2 segment
+                    elif j < first_c2_i and idx_j >= first_c2_i:
+                        # Save it
+                        c1_to_reorder.append(j)
 
-            # The word to where everything started (to which the
-            # columns was built)
-            c1_w1 = c1_w[i]
-            # c1_w1 = i
-            # For all c2 words that have to be reordered
-            for (j, start_pos) in c2_to_reorder:
-                # The current c2 word to reorder realigned
-                c2_w1 = c2_w[j - first_c2_i - 1]
-                # c2_w1 = j - first_c2_i - 1
-                # For all c1 words that have to be reordered before
-                # the current c2 word to reorder
-                for k in c1_to_reorder[:start_pos]:
-                    c1_w2 = c1_w[k]
-                    # c1_w2 = k
-                    # The inequality is made of c1_w1, the row word,
-                    # and c1_w2, the c1 word after c2_w1, and c2_w1,
-                    # the c2 word before c1_w2
-                    # ineq.append([c1_w1, c1_w2, c2_w1])
+                # Columns is over, generate the inequalities to reorder c1
+                # words before c2 words
+
+                # The word to where everything started (to which the
+                # columns was built)
+                c1_w1 = c1_w[i]
+                products = itertools.product(c1_to_reorder[::-1][:top],
+                                             c2_to_reorder[:top])
+                for (c1_w2_idx, c2_w1_idx) in products:
                     cpt += 1
-        logger.info('total = %d', cpt)
-        return ineq
+                    c1_w2 = c1_w[c1_w2_idx]
+                    c2_w1 = c2_w[c2_w1_idx - first_c2_i - 1]
+                    if output_path is not None:
+                        ofile.write(fmt_str.format(
+                            c1_w1=c1_w1, c1_w2=c1_w2,
+                            c2_w1=c2_w1))
+                    else:
+                        ineq.append([c1_w1, c1_w2, c2_w1])
+                logger.info('(%d/%d) %d inequalities', i, c1_v.shape[0], cpt)
+    finally:
+        if output_path is not None:
+            ofile.close()
+    return ineq
