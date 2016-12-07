@@ -9,7 +9,7 @@ import functools
 import itertools
 import re
 import numbers
-import numpy
+import numpy as np
 import scipy
 import codecs
 import tempfile
@@ -89,7 +89,7 @@ class MeanVectors(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, **params):
-        return [numpy.mean(x, axis=0) for x in X]
+        return [np.mean(x, axis=0) for x in X]
 
 
 class ExtractFeatures(BaseEstimator, TransformerMixin):
@@ -153,7 +153,7 @@ class FindClosestInLexicon(object):
     #             cdist = scipy.spatial.distance.cdist([self.model[word]],
     #                                                  polarized, metric='cosine')
     #             cdist = (cdist - 1) * -1
-    #             score = numpy.sort(cdist)[0][-1]
+    #             score = np.sort(cdist)[0][-1]
     #         ret.append(score)
     #     return ret
 
@@ -177,7 +177,7 @@ closest word of the given class.
             cdist = scipy.spatial.distance.cdist([self.model[word]],
                                                  polarized, metric='cosine')
             cdist = (cdist - 1) * -1
-            score = numpy.sort(cdist)[0][-1]
+            score = np.sort(cdist)[0][-1]
             ret.append(score)
         return ret
 
