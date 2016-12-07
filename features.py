@@ -866,3 +866,82 @@ aren't in the vocabulary.
                 for c2_w1 in lst_c2:
                     ofile.write('%s %s %s %s\n' % (c1_w1, c1_w2,
                                                    c1_w1, c2_w1))
+
+
+def find_ineq(model, lexicon, truncate=None):
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+    ineq = []
+    cpt = 0
+    for (c1, c2) in itertools.combinations(lexicon_inv, 2):
+        # c2, c1 = c1, c2
+        # All vectors of words in c1
+        c1_w = [w for w in lexicon_inv[c1][:truncate] if w in model]
+        c1_v = np.array([model[w] for w in c1_w])
+        # All vectors of words in c2
+        c2_w = [w for w in lexicon_inv[c2][:truncate] if w in model]
+        c2_v = np.array([model[w] for w in c2_w])
+
+        logger.info('c1_v = %s', c1_v.shape)
+        logger.info('c2_v = %s', c2_v.shape)
+        # Concatenate c1 and c2 vectors
+        c1_c2_v = np.append(c1_v, c2_v, 0)
+
+        # The index of the first word of c2 in c1_c2_v
+        first_c2_i = c1_v.shape[0]
+
+        # The distances between each words in c1 to c1 and c2
+        cdist = scipy.spatial.distance.cdist(c1_v, c1_c2_v, metric='cosine')
+        # We only consider the strict upper triangle of the cdist
+        # matrix, everything under the diagonal have already been
+        # considered
+        cdist = np.triu(cdist, 1)
+
+        # The index of words distances ordered
+        sorted_cdist_idx = np.argsort(cdist)
+
+        # Iter on rows (words of c1)
+        for i in range(c1_v.shape[0]):
+            if i % 10 == 0:
+                logger.info('%d/%d = %d', i, c1_v.shape[0], cpt)
+            start_recording = False
+            c2_to_reorder = []
+            c1_to_reorder = []
+            # Iter on columns (ordered index of dist(c1_v[i], c2_v))
+            for (idx_j, j) in enumerate(sorted_cdist_idx[i][i:]):
+                # If the current index is in c2
+                if j >= first_c2_i:
+                    # Star recording the next c1 words because they
+                    # should be before j
+                    start_recording = True
+                    # Store the c2 to reorder and the position from
+                    # which the next c1 words should be reordered
+                    c2_to_reorder.append([j, len(c1_to_reorder)])
+                # The current index is in c1
+                elif start_recording:
+                    # But there are c2 words before, store the c1
+                    # words that have to be reordered
+                    c1_to_reorder.append(j)
+            # Columns is over, generate the inequalities to reorder c1
+            # words before c2 words
+
+            # The word to where everything started (to which the
+            # columns was built)
+            c1_w1 = c1_w[i]
+            # c1_w1 = i
+            # For all c2 words that have to be reordered
+            for (j, start_pos) in c2_to_reorder:
+                # The current c2 word to reorder realigned
+                c2_w1 = c2_w[j - first_c2_i - 1]
+                # c2_w1 = j - first_c2_i - 1
+                # For all c1 words that have to be reordered before
+                # the current c2 word to reorder
+                for k in c1_to_reorder[:start_pos]:
+                    c1_w2 = c1_w[k]
+                    # c1_w2 = k
+                    # The inequality is made of c1_w1, the row word,
+                    # and c1_w2, the c1 word after c2_w1, and c2_w1,
+                    # the c2 word before c1_w2
+                    # ineq.append([c1_w1, c1_w2, c2_w1])
+                    cpt += 1
+        logger.info('total = %d', cpt)
+        return ineq
