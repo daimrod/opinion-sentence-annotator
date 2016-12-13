@@ -294,7 +294,9 @@ def build_custom3(initial_model,
                   lexicon={},
                   a_i=1, b_ij=1, n_iter=10):
     """Retrofit a model using faruqui:2014:NIPS-DLRLW method."""
-    initial_model_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
+                                                     encoding='utf-8',
+                                                     delete=False)
     initial_model_file.close()
     initial_model.save(initial_model_file.name)
     model = gensim.models.Word2Vec.load(initial_model_file.name)
