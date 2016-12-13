@@ -348,7 +348,7 @@ class CNNRouvierBaseline_custom0(CNNRouvierBaseline):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_custom0()
-CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline
+CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline_custom0
 
 
 class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
@@ -357,14 +357,25 @@ class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
         self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                               res.bing_liu_lexicon_path['positive'])
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
-CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline
+CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
+
+
+class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        model0 = emb.get_custom0()
+        self.embedding = emb.build_custom3(model0,
+                                           lexicon=self.bing_liu_lexicon)
+CNNRegister['Rouvier_base_custom3'] = CNNRouvierBaseline_custom3
 
 
 class CNNRouvierBaseline_gnews(CNNRouvierBaseline):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_gnews()
-CNNRegister['Rouvier_base_gnews'] = CNNRouvierBaseline
+CNNRegister['Rouvier_base_gnews'] = CNNRouvierBaseline_gnews
 
 
 class CNNRouvier2016(CNNBase):
@@ -428,7 +439,7 @@ class CNNRouvier2016_custom0(CNNRouvier2016):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_custom0()
-CNNRegister['Rouvier2016_custom0'] = CNNRouvier2016
+CNNRegister['Rouvier2016_custom0'] = CNNRouvier2016_custom0
 
 
 class CNNRouvier2016_custom1(CNNRouvier2016):
@@ -437,11 +448,22 @@ class CNNRouvier2016_custom1(CNNRouvier2016):
         self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                               res.bing_liu_lexicon_path['positive'])
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
-CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016
+CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
+
+
+class CNNRouvier2016_custom3(CNNRouvier2016):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        model0 = emb.get_custom0()
+        self.embedding = emb.build_custom3(model0,
+                                           lexicon=self.bing_liu_lexicon)
+CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
 
 
 class CNNRouvier2016_gnews(CNNRouvier2016):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.embedding = emb.get_gnews()
-CNNRegister['Rouvier2016_gnews'] = CNNRouvier2016
+CNNRegister['Rouvier2016_gnews'] = CNNRouvier2016_gnews
