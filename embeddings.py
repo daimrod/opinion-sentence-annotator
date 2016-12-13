@@ -303,7 +303,11 @@ def build_custom3(initial_model,
     for it in range(n_iter):
         # loop through every node also in ontology (else just use data
         # estimate)
+        count = 0
         for word in lexicon:
+            count += 1
+            if count % 100 == 0:
+                logger.info('iter: %d/%d, word %d/%d', it, n_iter, count, len(lexicon))
             if word not in model:
                 continue
             i = model.vocab[word].index
