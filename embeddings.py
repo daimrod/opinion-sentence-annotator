@@ -195,7 +195,8 @@ def get_custom2():
 
 def build_custom2(train_path,
                   word2vec_param=default_word2vec_param,
-                  lexicon=None):
+                  lexicon=None,
+                  clean_after=True):
     """Build a Word2Vec model using SWE method (optimization with
 inequalities)."""
     if lexicon is None:
@@ -228,23 +229,29 @@ inequalities)."""
             vocab_file.write('%s\t%d\n' % (word, vocab[word]))
         vocab_file.close()
 
-        feat.build_ineq(lexicon, ineq_file.name, vocab=list(vocab), truncate=400)
+        model0 = get_custom0(word2vec_param=word2vec_param)
+        feat.build_ineq_for_model(model0, lexicon,
+                                  output_path=ineq_file.name,
+                                  vocab=list(vocab),
+                                  top=10)
         utils.split_train_valid(ineq_file.name)
 
         input_file.close()
-        p = Popen(['bin/SWE_Train',
-                   '-train', train_path,
-                   '-read-vocab', vocab_file.name,
-                   '-output', output_file.name,
-                   '-size', str(word2vec_param['size']),
-                   '-window', str(word2vec_param['window']),
-                   '-sample', str(word2vec_param['sample']),
-                   '-hs', str(word2vec_param['hs']),
-                   '-iter', str(word2vec_param['iter']),
-                   '-min-count', str(word2vec_param['min_count']),
-                   '-sem-train', ineq_file.name + '.train',
-                   '-sem-valid', ineq_file.name + '.valid',
-                   ],
+        cmd = ['bin/SWE_Train',
+               '-train', train_path,
+               '-read-vocab', vocab_file.name,
+               '-output', output_file.name,
+               '-size', str(word2vec_param['size']),
+               '-window', str(word2vec_param['window']),
+               '-sample', str(word2vec_param['sample']),
+               '-hs', str(word2vec_param['hs']),
+               '-iter', str(word2vec_param['iter']),
+               '-min-count', str(word2vec_param['min_count']),
+               '-sem-train', ineq_file.name + '.train',
+               '-sem-valid', ineq_file.name + '.valid',
+        ]
+        logger.info(' '.join(cmd))
+        p = Popen(cmd,
                   stdin=PIPE,
                   stdout=PIPE,
                   stderr=PIPE,

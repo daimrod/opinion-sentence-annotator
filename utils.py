@@ -186,9 +186,11 @@ def split_train_valid(input_path, valid_num=3000):
         valid_file = codecs.open(valid_path, 'w+', 'utf-8')
         idx = 0
         for line in ifile:
-            if idx in valid_indexes:
+            try:
+                v_idx = valid_indexes.index(idx)
                 valid_file.write(line)
-            else:
+                del valid_indexes[v_idx]
+            except ValueError:
                 train_file.write(line)
             idx += 1
     finally:

@@ -833,7 +833,7 @@ the key and elements associated to key to keep.
     __call__ = keep_on
 
 
-def build_ineq(lexicon, output_path, vocab=None, truncate=None):
+def build_all_ineq(lexicon, output_path, vocab=None, truncate=None):
     """Write inequalities for SWE like models in output_path.
 
     For each word of each class in lexicon, build inqualities like
@@ -868,11 +868,32 @@ aren't in the vocabulary.
                                                    c1_w1, c2_w1))
 
 
-def find_ineq(model, lexicon,
-              output_path=None,
-              truncate=None,
-              top=None,
-              fmt_str='{c1_w1}\t{c1_w2}\t{c1_w1}\t{c2_w1}\n'):
+def build_ineq_for_model(model, lexicon,
+                         output_path=None,
+                         vocab=None,
+                         truncate=None,
+                         top=None,
+                         fmt_str='{c1_w1} {c1_w2} {c1_w1} {c2_w1}\n'):
+    """Write inequalities for SWE-like models in OUTPUT_PATH based on the
+words in MODEL that are not properly positioned according to the
+LEXICON.
+
+    For all words in the LEXICON build inequalities to constrain the
+    words that belong to a class but are closer to words in another
+    class.
+
+    If VOCAB is supplied, do not build inequalities for words that
+    aren't in the vocabulary.
+
+    TOP is used to keep only the closest/farthest words to the
+    other/same class.
+
+    TRUNCATE is used to limit the number of words to consider in the
+    LEXICON for each class.
+
+    With an empty OUTPUT_PATH, return a list of inequalities.
+
+    """
     lexicon_inv = utils.invert_dict_nonunique(lexicon)
     ineq = []
     cpt = 0
@@ -940,7 +961,9 @@ def find_ineq(model, lexicon,
                             c2_w1=c2_w1))
                     else:
                         ineq.append([c1_w1, c1_w2, c2_w1])
-                logger.info('(%d/%d) %d inequalities', i, c1_v.shape[0], cpt)
+                i += 1
+                if i % 100 == 0 or i == c1_v.shape[0]:
+                    logger.info('(%d/%d) %d inequalities', i, c1_v.shape[0], cpt)
     finally:
         if output_path is not None:
             ofile.close()
