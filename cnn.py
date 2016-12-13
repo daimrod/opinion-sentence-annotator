@@ -297,6 +297,17 @@ class CNNChengGuo_Custom1(CNNChengGuo):
 CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
 
+class CNNChengGuo_Custom3(CNNChengGuo):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
+                                              res.bing_liu_lexicon_path['positive'])
+        model0 = emb.get_custom0()
+        self.embedding = emb.get_custom3(model0,
+                                         lexicon=self.bing_liu_lexicon)
+CNNRegister['CG_custom3'] = CNNChengGuo_Custom3
+
+
 class CNNChengGuo_Gnews(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
