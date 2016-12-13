@@ -11,6 +11,8 @@ from collections import Counter
 from collections import OrderedDict
 
 import gensim
+import numpy as np
+from copy import deepcopy
 
 from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
@@ -185,7 +187,7 @@ def get_custom2():
     logger.info('Load custom2 model')
     saved_model_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
     if os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(res.twitter_logger_en_path):
-        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path, binary=False)
+        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path, binary=True)
     else:
         logger.error('Custom2 model doesn\'t exist %s', saved_model_path)
         raise ValueError
@@ -256,25 +258,65 @@ inequalities)."""
         else:
             logger.info(out)
             model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
-                                                                binary=False)
+                                                                binary=True)
     finally:
-        os.remove(vocab_file.name)
-        os.remove(input_file.name)
-        os.remove(output_file.name)
-        os.remove(ineq_file.name)
-        os.remove(ineq_file.name + '.train')
-        os.remove(ineq_file.name + '.valid')
+        if clean_after:
+            os.remove(vocab_file.name)
+            os.remove(input_file.name)
+            os.remove(output_file.name)
+            os.remove(ineq_file.name)
+            os.remove(ineq_file.name + '.train')
+            os.remove(ineq_file.name + '.valid')
     return model
 
 
-def get_custom3():
+def old_get_custom3():
     logger.info('Load custom3 model')
     saved_model_path = '/tmp/word2vec.custom3.txt'
-    if os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(res.twitter_logger_en_path):
-        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path, binary=False)
+    if (os.path.exists(saved_model_path) and
+        (os.path.getmtime(saved_model_path)
+         > os.path.getmtime(res.twitter_logger_en_path))):
+        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path,
+                                                           binary=True)
     else:
         logger.error('Custom3 model doesn\'t exist %s', saved_model_path)
         raise ValueError
+
+
+def build_custom3(initial_model,
+                  lexicon={},
+                  a_i=1, b_ij=1, n_iter=10):
+    """Retrofit a model using faruqui:2014:NIPS-DLRLW method."""
+    initial_model_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    initial_model_file.close()
+    initial_model.save(initial_model_file.name)
+    model = gensim.models.Word2Vec.load(initial_model_file.name)
+    for it in range(n_iter):
+        # loop through every node also in ontology (else just use data
+        # estimate)
+        for word in lexicon:
+            if word not in model:
+                continue
+            i = model.vocab[word].index
+            word_neighbours = [w for w in lexicon[word] if w in model]
+            num_neighbours = len(word_neighbours)
+
+            if b_ij == 'degree':
+                b_ij = 1/num_neighbours
+
+            #no neighbours, pass - use data estimate
+            if num_neighbours == 0:
+                continue
+            # the weight of the data estimate if the number of neighbours
+            model.syn0[i] = num_neighbours * a_i * initial_model.syn0[i]
+            denom = 0
+            # loop over neighbours and add to new vector
+            for pp_word in word_neighbours:
+                j = model.vocab[pp_word].index
+                model.syn0[i] += b_ij * model.syn0[j]
+                denom += b_ij + a_i
+            model.syn0[i] = model.syn0[i] / denom
+    return model
 
 
 def get_gnews():
