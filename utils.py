@@ -197,3 +197,28 @@ def split_train_valid(input_path, valid_num=3000):
         ifile.close()
         train_file.close()
         valid_file.close()
+
+
+def opinion_lexicon_to_graph(lexicon):
+    """Return a undirected graph from lexicon.
+
+LEXICON is an opinion lexicon where each key is a class and the value
+associated to it is a list of words that belongs to the class.
+
+This function will build a undirected graph where each node are words
+and the edges between nodes represent a similarity relationship. There
+will be an edge between two words if they belong to the same class.
+
+In practice, this method returns a dictionnary where a key is a word
+of LEXICON and the value associated to it are all words from the same
+class.
+
+This is intended to be used by emb.build_custom3
+"""
+    ret = {}
+    lexicon_inv = invert_dict_nonunique(lexicon)
+    for c in lexicon_inv:
+        words = lexicon_inv[c]
+        for word in words:
+            ret[word] = words
+    return ret
