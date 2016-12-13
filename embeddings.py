@@ -318,13 +318,15 @@ def build_custom3(initial_model,
                 continue
             # the weight of the data estimate if the number of neighbours
             model.syn0[i] = num_neighbours * a_i * initial_model.syn0[i]
-            denom = 0
             # loop over neighbours and add to new vector
-            for pp_word in word_neighbours:
-                j = model.vocab[pp_word].index
-                model.syn0[i] += b_ij * model.syn0[j]
-                denom += b_ij + a_i
-            model.syn0[i] = model.syn0[i] / denom
+            # for pp_word in word_neighbours:
+            #     j = model.vocab[pp_word].index
+            #     model.syn0[i] += b_ij * model.syn0[j]
+
+            # Vectorized version of the above
+            word_neighbours = [model.vocab[w].index for w in word_neighbours]
+            model.syn0[i] = b_ij * np.sum(model.syn0[word_neighbours], axis=0)
+            model.syn0[i] = model.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
 
 
