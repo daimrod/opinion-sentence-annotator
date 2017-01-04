@@ -132,7 +132,7 @@ class SaveBestModel(Callback):
                     if self.verbose > 0:
                         print('Epoch %05d: %s did not improve' %
                               (epoch, self.monitor))
-        self.cnn_base.best = self.best
+        self.cnn_base.best_model = self.best
 
 
 class CNNBase(FullPipeline):
@@ -162,7 +162,7 @@ class CNNBase(FullPipeline):
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
         self.embedding = None
-        self.best = None
+        self.best_model = None
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -278,14 +278,14 @@ class CNNBase(FullPipeline):
         logger.info('Shape of data tensor: %s', self.test_data.shape)
 
         if len(self.preds) == 1:
-            t_predicted = self.model.predict(self.test_data, verbose=1)
+            t_predicted = self.best_model.predict(self.test_data, verbose=1)
             if t_predicted.shape[-1] > 1:
                 self.predicted = t_predicted.argmax(axis=-1)
             else:
                 self.predicted = (t_predicted > 0.5).astype('int32')
         else:
             self.predicted = [None] * len(self.preds)
-            for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
+            for (i, t_predicted) in enumerate(self.best_model.predict(self.test_data, verbose=1)):
                 if t_predicted.shape[-1] > 1:
                     self.predicted[i] = t_predicted.argmax(axis=-1)
                 else:
