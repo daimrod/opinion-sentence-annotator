@@ -408,7 +408,7 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
         print(self.model.summary())
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='rmsprop',
-                           metrics=['acc'])
+                           metrics=[fmeasure])
 CNNRegister['CG'] = CNNChengGuo
 
 
@@ -482,7 +482,7 @@ class CNNRouvierBaseline(CNNBase):
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=adadelta,
-                           metrics=['acc'])
+                           metrics=[fmeasure])
 CNNRegister['Rouvier_base'] = CNNRouvierBaseline
 
 
@@ -573,7 +573,7 @@ class CNNRouvier2016(CNNBase):
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=adadelta,
-                           metrics=['acc'])
+                           metrics=[fmeasure])
 CNNRegister['Rouvier2016'] = CNNRouvier2016
 
 
