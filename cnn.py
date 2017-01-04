@@ -164,6 +164,8 @@ class SaveBestModel(Callback):
             else:
                 self.monitor_op = np.less
                 self.best = np.Inf
+        if self.cnn_base.best_score is not None:
+            self.best = self.cnn_base.best_score
 
     def on_epoch_end(self, epoch, logs={}):
         self.epochs_since_last_save += 1
@@ -185,6 +187,7 @@ class SaveBestModel(Callback):
                         print('Epoch %05d: %s did not improve' %
                               (epoch, self.monitor))
         self.cnn_base.best_model = self.model
+        self.cnn_base.best_score = self.best
 
 
 class CNNBase(FullPipeline):
@@ -195,6 +198,7 @@ class CNNBase(FullPipeline):
                  test_only_labels=['positive', 'negative', 'neutral'],
                  repreprocess=False,
                  nb_epoch=2, batch_size=128,
+                 nb_try=1,
                  max_sequence_length=1000,
                  shuffle=True,
                  max_nb_words=20000,
@@ -215,6 +219,8 @@ class CNNBase(FullPipeline):
         self.shuffle = shuffle
         self.embedding = None
         self.best_model = None
+        self.best_score = None
+        self.nb_try = nb_try
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -315,14 +321,17 @@ class CNNBase(FullPipeline):
 
     def run_train(self):
         super().run_train()
-        self.model.fit(self.train_data, [self.labels] * len(self.preds),
-                       validation_data=(self.dev_data, to_categorical(self.dev.target)),
-                       nb_epoch=self.nb_epoch, batch_size=self.batch_size,
-                       verbose=1,
-                       callbacks=[SaveBestModel(self,
-                                                monitor='val_fmeasure',
-                                                mode='max')],
-                       shuffle=self.shuffle)
+        for j in range(self.nb_try):
+            self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                           validation_data=(self.dev_data,
+                                            to_categorical(self.dev.target)),
+                           nb_epoch=self.nb_epoch,
+                           batch_size=self.batch_size,
+                           verbose=1,
+                           callbacks=[SaveBestModel(self,
+                                                    monitor='val_fmeasure',
+                                                    mode='max')],
+                           shuffle=self.shuffle)
 
     def run_test(self):
         super().run_test()
