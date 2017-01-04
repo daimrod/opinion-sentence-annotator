@@ -41,6 +41,7 @@ from keras.optimizers import Adadelta
 from keras.optimizers import SGD
 
 from keras.callbacks import BaseLogger
+from keras.callbacks import Callback
 
 import numpy as np
 
@@ -56,6 +57,82 @@ class TestEpoch(BaseLogger):
         logger.info('epoch: %d', epoch)
         self.pipeline.run_test()
         self.pipeline.print_results()
+
+
+class SaveBestModel(Callback):
+    '''
+    # Arguments
+        monitor: quantity to monitor.
+        verbose: verbosity mode, 0 or 1.
+        save_best_only: if `save_best_only=True`,
+            the latest best model according to
+            the quantity monitored will not be overwritten.
+        mode: one of {auto, min, max}.
+            If `save_best_only=True`, the decision
+            to overwrite the current save file is made
+            based on either the maximization or the
+            minimization of the monitored quantity. For `val_acc`,
+            this should be `max`, for `val_loss` this should
+            be `min`, etc. In `auto` mode, the direction is
+            automatically inferred from the name of the monitored quantity.
+        save_weights_only: if True, then only the model's weights will be
+            saved (`model.save_weights(filepath)`), else the full model
+            is saved (`model.save(filepath)`).
+        period: Interval (number of epochs) between checkpoints.
+    '''
+    def __init__(self, cnn_base, monitor='val_loss', verbose=0,
+                 save_weights_only=False,
+                 mode='auto', period=1):
+        super().__init__()
+        self.cnn_base = cnn_base
+        self.monitor = monitor
+        self.verbose = verbose
+        self.save_weights_only = save_weights_only
+        self.period = period
+        self.epochs_since_last_save = 0
+
+        if mode not in ['auto', 'min', 'max']:
+            logger.warn('ModelCheckpoint mode %s is unknown, '
+                        'fallback to auto mode.' % (mode),
+                        RuntimeWarning)
+            mode = 'auto'
+
+        if mode == 'min':
+            self.monitor_op = np.less
+            self.best = np.Inf
+        elif mode == 'max':
+            self.monitor_op = np.greater
+            self.best = -np.Inf
+        else:
+            if 'acc' in self.monitor:
+                self.monitor_op = np.greater
+                self.best = -np.Inf
+            else:
+                self.monitor_op = np.less
+                self.best = np.Inf
+
+    def on_epoch_end(self, epoch, logs={}):
+        self.epochs_since_last_save += 1
+        if self.epochs_since_last_save >= self.period:
+            self.epochs_since_last_save = 0
+            filepath = self.filepath.format(epoch=epoch, **logs)
+            current = logs.get(self.monitor)
+            if current is None:
+                logger.warn('Can save best model only with %s available, '
+                            'skipping.' % (self.monitor), RuntimeWarning)
+            else:
+                if self.monitor_op(current, self.best):
+                    if self.verbose > 0:
+                        print('Epoch %05d: %s improved from %0.5f to %0.5f,'
+                              ' saving model to %s'
+                              % (epoch, self.monitor, self.best,
+                                 current, filepath))
+                    self.best = current
+                else:
+                    if self.verbose > 0:
+                        print('Epoch %05d: %s did not improve' %
+                              (epoch, self.monitor))
+        self.cnn_base.best = self.best
 
 
 class CNNBase(FullPipeline):
@@ -85,6 +162,7 @@ class CNNBase(FullPipeline):
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
         self.embedding = None
+        self.best = None
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -189,7 +267,7 @@ class CNNBase(FullPipeline):
                        validation_data=(self.dev_data, to_categorical(self.dev.target)),
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
                        verbose=1,
-                       # callbacks=[TestEpoch(self)],
+                       callbacks=[SaveBestModel(self)],
                        shuffle=self.shuffle)
 
     def run_test(self):
