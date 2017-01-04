@@ -168,7 +168,6 @@ class SaveBestModel(Callback):
         self.epochs_since_last_save += 1
         if self.epochs_since_last_save >= self.period:
             self.epochs_since_last_save = 0
-            filepath = self.filepath.format(epoch=epoch, **logs)
             current = logs.get(self.monitor)
             if current is None:
                 logger.warn('Can save best model only with %s available, '
@@ -177,9 +176,8 @@ class SaveBestModel(Callback):
                 if self.monitor_op(current, self.best):
                     if self.verbose > 0:
                         print('Epoch %05d: %s improved from %0.5f to %0.5f,'
-                              ' saving model to %s'
-                              % (epoch, self.monitor, self.best,
-                                 current, filepath))
+                              ' saving model'
+                              % (epoch, self.monitor, self.best, current))
                     self.best = current
                 else:
                     if self.verbose > 0:
