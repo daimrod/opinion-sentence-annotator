@@ -184,7 +184,7 @@ class SaveBestModel(Callback):
                     if self.verbose > 0:
                         print('Epoch %05d: %s did not improve' %
                               (epoch, self.monitor))
-        self.cnn_base.best_model = self.best
+        self.cnn_base.best_model = self.model
 
 
 class CNNBase(FullPipeline):
