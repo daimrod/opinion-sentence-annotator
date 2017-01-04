@@ -134,7 +134,7 @@ class SaveBestModel(Callback):
             is saved (`model.save(filepath)`).
         period: Interval (number of epochs) between checkpoints.
     '''
-    def __init__(self, cnn_base, monitor='val_loss', verbose=0,
+    def __init__(self, cnn_base, monitor='val_loss', verbose=1,
                  save_weights_only=False,
                  mode='auto', period=1):
         super().__init__()
