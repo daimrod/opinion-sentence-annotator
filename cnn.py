@@ -319,7 +319,7 @@ class CNNBase(FullPipeline):
                        validation_data=(self.dev_data, to_categorical(self.dev.target)),
                        nb_epoch=self.nb_epoch, batch_size=self.batch_size,
                        verbose=1,
-                       callbacks=[SaveBestModel(self)],
+                       callbacks=[SaveBestModel(self, monitor='val_fmeasure')],
                        shuffle=self.shuffle)
 
     def run_test(self):
