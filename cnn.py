@@ -112,6 +112,7 @@ def fmeasure(y_true, y_pred):
     '''
     return fbeta_score(y_true, y_pred, beta=1)
 
+
 class SaveBestModel(Callback):
     '''
     # Arguments
