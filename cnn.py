@@ -178,7 +178,7 @@ class SaveBestModel(Callback):
             else:
                 if self.monitor_op(current, self.best):
                     if self.verbose > 0:
-                        print('Epoch %05d: %s improved from %0.5f to %0.5f,'
+                        print('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
                               ' saving model'
                               % (epoch, self.monitor, self.best, current))
                     self.best = current
