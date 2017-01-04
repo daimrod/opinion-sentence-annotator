@@ -314,7 +314,10 @@ class CNNBase(FullPipeline):
         x = Dense(128, activation='relu')(x)
         self.preds = [Dense(len(self.labels_index), activation='softmax')(x)]
 
+    def build_model(self):
         self.model = Model(self.sequence_input, self.preds)
+        print('model built')
+        print(self.model.summary())
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='rmsprop',
                            metrics=[fmeasure])
@@ -322,6 +325,8 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         for j in range(self.nb_try):
+            self.build_model()
+
             self.model.fit(self.train_data, [self.labels] * len(self.preds),
                            validation_data=(self.dev_data,
                                             to_categorical(self.dev.target)),
@@ -412,13 +417,6 @@ I add minor adjustments to make it work for the Semeval Sentiment Analsysis task
         x = merge(ngram_filters, mode='concat')
         x = Dropout(self.dropout)(x)
         self.preds = [Dense(len(self.labels_index), activation='sigmoid')(x)]
-        self.model = Model(self.sequence_input, self.preds)
-
-        print('model built')
-        print(self.model.summary())
-        self.model.compile(loss='categorical_crossentropy',
-                           optimizer='rmsprop',
-                           metrics=[fmeasure])
 CNNRegister['CG'] = CNNChengGuo
 
 
@@ -485,8 +483,9 @@ class CNNRouvierBaseline(CNNBase):
         x = Dropout(self.dropout)(x)
 
         self.preds = [Dense(len(self.labels_index), activation='softmax')(x)]
-        self.model = Model(self.sequence_input, self.preds)
 
+    def build_model(self):
+        self.model = Model(self.sequence_input, self.preds)
         print('model built')
         print(self.model.summary())
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
@@ -573,11 +572,10 @@ class CNNRouvier2016(CNNBase):
         output1 = Dense(3, activation='softmax')(x)
         output2 = Dense(3, activation='softmax')(dropout_hd2)
 
-        adadelta = SGD(lr=0.005, momentum=0.7, decay=1e-06, nesterov=True)
-
         self.preds = [output1]
-        self.model = Model(self.sequence_input, self.preds)
 
+    def build_model(self):
+        self.model = Model(self.sequence_input, self.preds)
         print('model built')
         print(self.model.summary())
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
