@@ -7,3 +7,4 @@ scipy
 keras
 # tensorflow
 theano
+h5py
