@@ -27,6 +27,10 @@ import reader
 
 lexicon = reader.read_bing_liu(res.bing_liu_lexicon_path['negative'],
                                res.bing_liu_lexicon_path['positive'])
-word2vec_param = {'workers': 6 }
+word2vec_param = emb.default_word2vec_param
+word2vec_param['workers'] = 6
 
-emb.get_custom1(word2vec_param=word2vec_param, lexicon=lexicon)
+emb.get_custom0(word2vec_param=word2vec_param,
+                force=True)
+emb.get_custom1(word2vec_param=word2vec_param, lexicon=lexicon,
+                force=True)
