@@ -114,8 +114,15 @@ def fmeasure(y_true, y_pred):
 
 
 class SaveBestModel(Callback):
-    '''
+    '''Save the model after every epoch.
+    `filepath` can contain named formatting options,
+    which will be filled the value of `epoch` and
+    keys in `logs` (passed in `on_epoch_end`).
+    For example: if `filepath` is `weights.{epoch:02d}-{val_loss:.2f}.hdf5`,
+    then multiple files will be save with the epoch number and
+    the validation loss.
     # Arguments
+        filepath: string, path to save the model file.
         monitor: quantity to monitor.
         verbose: verbosity mode, 0 or 1.
         save_best_only: if `save_best_only=True`,
@@ -134,16 +141,18 @@ class SaveBestModel(Callback):
             is saved (`model.save(filepath)`).
         period: Interval (number of epochs) between checkpoints.
     '''
-    def __init__(self, cnn_base, monitor='val_loss', verbose=1,
-                 save_weights_only=False,
+    def __init__(self, cnn_base, filepath, monitor='val_loss', verbose=1,
+                 save_best_only=True, save_weights_only=False,
                  mode='auto', period=1):
         super().__init__()
-        self.cnn_base = cnn_base
         self.monitor = monitor
         self.verbose = verbose
+        self.filepath = filepath
+        self.save_best_only = save_best_only
         self.save_weights_only = save_weights_only
         self.period = period
         self.epochs_since_last_save = 0
+        self.cnn_base = cnn_base
 
         if mode not in ['auto', 'min', 'max']:
             logger.warn('ModelCheckpoint mode %s is unknown, '
@@ -158,7 +167,7 @@ class SaveBestModel(Callback):
             self.monitor_op = np.greater
             self.best = -np.Inf
         else:
-            if 'acc' in self.monitor:
+            if self.monitor.startswith(('acc', 'fmeasure')):
                 self.monitor_op = np.greater
                 self.best = -np.Inf
             else:
@@ -171,23 +180,40 @@ class SaveBestModel(Callback):
         self.epochs_since_last_save += 1
         if self.epochs_since_last_save >= self.period:
             self.epochs_since_last_save = 0
-            current = logs.get(self.monitor)
-            if current is None:
-                logger.warn('Can save best model only with %s available, '
-                            'skipping.' % (self.monitor), RuntimeWarning)
-            else:
-                if self.monitor_op(current, self.best):
-                    if self.verbose > 0:
-                        logger.info('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
-                                    ' saving model'
-                                    % (epoch, self.monitor, self.best, current))
-                    self.best = current
+            filepath = self.filepath.format(epoch=epoch, **logs)
+            if self.save_best_only:
+                current = logs.get(self.monitor)
+                if current is None:
+                    logger.warn('Can save best model only with %s available, '
+                                'skipping.' % (self.monitor), RuntimeWarning)
                 else:
-                    if self.verbose > 0:
-                        logger.info('Epoch %05d: %s did not improve' %
-                                    (epoch, self.monitor))
-        self.cnn_base.best_model = self.model
-        self.cnn_base.best_score = self.best
+                    if self.monitor_op(current, self.best):
+                        if self.verbose > 0:
+                            logger.info('Epoch %05d: %s improved from %0.5f to %0.5f,'
+                                        ' saving model to %s'
+                                        % (epoch, self.monitor, self.best,
+                                           current, filepath))
+                        self.best = current
+                        self.cnn_base.best_model = self.model
+                        self.cnn_base.best_score = self.best
+                        if self.save_weights_only:
+                            self.model.save_weights(filepath, overwrite=True)
+                        else:
+                            self.model.save(filepath, overwrite=True)
+                    else:
+                        if self.verbose > 0:
+                            logger.info('Epoch %05d: %s did not improve' %
+                                        (epoch, self.monitor))
+            else:
+                if self.verbose > 0:
+                    logger.info('Epoch %05d: saving model to %s'
+                                % (epoch, filepath))
+                self.cnn_base.best_model = self.model
+                self.cnn_base.best_score = self.best
+                if self.save_weights_only:
+                    self.model.save_weights(filepath, overwrite=True)
+                else:
+                    self.model.save(filepath, overwrite=True)
 
 
 class CNNBase(FullPipeline):
@@ -336,6 +362,7 @@ class CNNBase(FullPipeline):
                            batch_size=self.batch_size,
                            verbose=1,
                            callbacks=[SaveBestModel(self,
+                                                    '.',
                                                     monitor='val_fmeasure',
                                                     mode='max')],
                            shuffle=self.shuffle)
