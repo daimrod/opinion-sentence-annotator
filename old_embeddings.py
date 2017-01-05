@@ -1,3 +1,5 @@
+import codecs
+
 ########## Emebeddings
 def Compare_ANEW(file_opinion):
     h_word2valence, h_word2arousal, h_word2dominance = {}, {}, {}
@@ -513,16 +515,12 @@ def BuildQREL_from_NRC_W2V(file_opinion, model_w2v):
          #if w in h_seen or vector == '0000000000': continue
          #if w in h_seen or vector == '00': continue
          t_pos_w = [w]
-         t_identical = [ w2 for w2 in h_word2class if 
-''.join(h_word2class[w2])==vector and not w2==w and not w2 in h_seen ]
+         t_identical = [ w2 for w2 in h_word2class if ''.join(h_word2class[w2])==vector and not w2==w and not w2 in h_seen ]
          #t_pos_w += random.sample(t_identical,min(len(t_identical),1))
          for w2 in t_pos_w: h_seen[w2]=1
          t_neg_w = []
-         #s_anti_w = set([ w2 for w2 in h_word2class if not 
-''.join(h_word2class[w2]) == vector and not 
-''.join(h_word2class[w2])=='00'])
-         #for t_elem in MostSimilar([w],m_embed,h_word2dim, topn=200):#, 
-possible_tag='same_as_query'):
+         #s_anti_w = set([ w2 for w2 in h_word2class if not ''.join(h_word2class[w2]) == vector and not ''.join(h_word2class[w2])=='00'])
+         #for t_elem in MostSimilar([w],m_embed,h_word2dim, topn=200):#, possible_tag='same_as_query'):
          #    nn,score = t_elem
          #    if nn in s_anti_w:
          #        t_neg_w.append(nn)
@@ -530,8 +528,7 @@ possible_tag='same_as_query'):
          #print(w, '  ;  neg : '+' '.join(t_neg_w))
 
 
-         for nn in ( w2 for w2 in h_word2class if vector == 
-(''.join(h_word2class[w2])) ):
+         for nn in ( w2 for w2 in h_word2class if vector == (''.join(h_word2class[w2])) ):
              if nn in t_pos_w: continue
              f_qrel_anger.write(str(qid)+' 0 '+nn+' 1\n')
 
