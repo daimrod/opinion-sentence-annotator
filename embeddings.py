@@ -346,3 +346,98 @@ def get_gnews():
     else:
         logger.error('Gnews model doesn\'t exist %s', saved_model_path)
         raise ValueError
+
+
+def compare_model_with_lexicon(model, lexicon,
+                               topn=100,
+                               random_choice=None,
+                               remove_file=False):
+    """Compare model with lexicon with trec_eval script.
+
+./trec_eval qrel top
+
+TOP reponse
+| QID2  | ITER        | DOCNO | RANK        | SIM                    | RUN_ID |
+|-------+-------------+-------+-------------+------------------------+--------|
+|       | 0 (ignored) | word  | 1 (ignored) | similarity score float | RUN_ID |
+
+QREL verite terrain
+| QID | ITER        | DOCNO | REL |
+|-----+-------------+-------+-----|
+|     | 0 (ignored) |       |     |
+
+QID = ID du mot
+
+    Args:
+        model: variable documentation.
+        lexicon: variable documentation.
+        topn: variable documentation.
+
+    Returns:
+        Returns information
+
+    Raises:
+        IOError: An error occurred.
+    """
+    try:
+        lexicon_index = list(enumerate([word for word
+                                        in random.sample(list(lexicon),
+                                                         random_choice)
+                                        if word in model]))
+    except TypeError:
+        lexicon_index = list(enumerate([word for word in lexicon
+                                        if word in model]))
+
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+
+    qrel_file = tempfile.NamedTemporaryFile(mode='w+',
+                                            encoding='utf-8',
+                                            delete=False,
+                                            prefix='qrel')
+    logger.info('Build Ground Truth Qrel file (%s)', qrel_file.name)
+
+    for qid, word in lexicon_index:
+        seen_docno = {}
+        for docno in lexicon_inv[lexicon[word]]:
+            docno = re.sub(r'[\n\r]', '', docno)
+            docno = docno.strip()
+            if docno == '' or docno in seen_docno:
+                continue
+
+            seen_docno[docno] = 1
+            qrel_file.write('%d 0 %s 1\n' % (qid, docno))
+
+    top_file = tempfile.NamedTemporaryFile(mode='w+',
+                                           encoding='utf-8',
+                                           delete=False,
+                                           prefix='top')
+    logger.info('Build Top (%d) answer from the model (%s)',
+                topn, top_file.name)
+
+    for qid, word in lexicon_index:
+        seen_docno = {}
+        for (rank, (docno, sim)) in enumerate(model.most_similar(word,
+                                                                 topn=topn)):
+            docno = re.sub(r'[\n\r]', '', docno)
+            docno = docno.strip()
+            if docno == '' or docno in seen_docno:
+                continue
+            seen_docno[docno] = 1
+            top_file.write('%d 0 %s %d %f runid\n' % (qid, docno, rank, sim))
+
+    logger.info('Run trec_eval script')
+    ret = None
+    try:
+        p = Popen(['./trec_eval', qrel_file.name, top_file.name],
+                  stdout=PIPE, stderr=PIPE, cwd=res.TREC_EVAL_PATH)
+        out, err = p.communicate()
+        ret = out + err
+        ret = ret.decode()
+        logger.info(ret)
+    except Exception:
+        pass
+    if remove_file:
+        os.remove(qrel_file.name)
+        os.remove(top_file.name)
+
+    return None
