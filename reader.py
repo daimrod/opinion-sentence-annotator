@@ -505,6 +505,7 @@ class FuzzyOpinionRecognizer(object):
 
 
 class Replacer(object):
+    """Generic interface to replace text with a placeholder"""
     def __init__(self, iterable, pattern=None, repl=None):
         self.iterable = iterable
         self.pattern = pattern
@@ -521,6 +522,7 @@ class Replacer(object):
 
 
 class URLReplacer(Replacer):
+    """Replace url with a placeholder"""
     def __init__(self, iterable):
         pattern = r'^http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+$'
         url = '_url_'
@@ -528,6 +530,7 @@ class URLReplacer(Replacer):
 
 
 class UserNameReplacer(Replacer):
+    """Replace Twitter username with a placeholder"""
     def __init__(self, iterable):
         pattern = r'^(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)$'
         repl = '_user_'
@@ -535,11 +538,11 @@ class UserNameReplacer(Replacer):
 
 
 class NumberReplacer(Replacer):
-    '''
+    """Replace number with a placeholder"""
     >>> r = reader.NumberReplacer(['asdf', 'qwer', ',12', 'asdfkjq23', '1231', '123.12', '123,32'])
     >>> list(r)
         ['asdf', 'qwer', 'NUMBER', 'asdfkjq23', 'NUMBER', 'NUMBER', 'NUMBER']
-'''
+"""
     def __init__(self, iterable):
         pattern = r'^[0-9]*[.,]?[0-9]+$'
         repl = '_number_'
@@ -547,6 +550,7 @@ class NumberReplacer(Replacer):
 
 
 class CarriageRemover(Replacer):
+    """Remove carriage return in tokens"""
     def __init__(self, iterable):
         pattern = r'[\n\r]'
         repl = ''
