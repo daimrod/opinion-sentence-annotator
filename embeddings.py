@@ -24,10 +24,9 @@ from reader import TwitterLoggerTextReader
 
 from reader import Tokenizer
 from reader import Splitter
-from reader import LexiconProjecter
-from reader import URLReplacer
-from reader import UserNameReplacer
 from reader import LineReader
+from reader import LexiconProjecter
+from reader import GenericTextReader
 
 import features as feat
 import resources as res
@@ -163,9 +162,7 @@ def build_custom0(train_path, word2vec_param=default_word2vec_param):
     This is the 0 method, that is the baseline method."""
     logger.info('Build custom0 model')
     source = TwitterLoggerTextReader(train_path)
-    source = URLReplacer(source)
-    source = UserNameReplacer(source)
-    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = GenericTextReader(source)
     source = Splitter(source)
     return gensim.models.Word2Vec(source, **word2vec_param)
 get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
@@ -178,9 +175,7 @@ def build_custom1(train_path,
         raise ValueError('Empty lexicon')
     logger.info('Train custom1 model')
     source = TwitterLoggerTextReader(train_path)
-    source = URLReplacer(source)
-    source = UserNameReplacer(source)
-    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = GenericTextReader(source)
     source = Splitter(source)
     source = LexiconProjecter(source, lexicon)
     return gensim.models.Word2Vec(source, **word2vec_param)
@@ -207,9 +202,7 @@ inequalities)."""
         raise ValueError('Empty lexicon')
     model = None
     source = LineReader(train_path)
-    source = URLReplacer(source)
-    source = UserNameReplacer(source)
-    source = Tokenizer(source, feat.happyfuntokenizer)
+    source = GenericTextReader(source)
     source = Splitter(source)
 
     input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
