@@ -354,6 +354,9 @@ def compare_model_with_lexicon(model, lexicon,
                                remove_file=False):
     """Compare model with lexicon with trec_eval script.
 
+https://faculty.washington.edu/levow/courses/ling573_SPR2011/hw/trec_eval_desc.htm
+http://trec.nist.gov/trec_eval/
+
 ./trec_eval qrel top
 
 TOP reponse
