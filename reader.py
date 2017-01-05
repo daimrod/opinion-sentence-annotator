@@ -523,14 +523,14 @@ class Replacer(object):
 class URLReplacer(Replacer):
     def __init__(self, iterable):
         pattern = r'^http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+$'
-        url = 'URL'
+        url = '_url_'
         super().__init__(iterable, pattern, url)
 
 
 class UserNameReplacer(Replacer):
     def __init__(self, iterable):
         pattern = r'^(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)$'
-        repl = '@USER'
+        repl = '_user_'
         super().__init__(iterable, pattern, repl)
 
 
@@ -542,7 +542,7 @@ class NumberReplacer(Replacer):
 '''
     def __init__(self, iterable):
         pattern = r'^[0-9]*[.,]?[0-9]+$'
-        repl = 'NUMBER'
+        repl = '_number_'
         super().__init__(iterable, pattern, repl)
 
 
