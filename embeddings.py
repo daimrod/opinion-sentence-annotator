@@ -376,14 +376,13 @@ QID = ID du mot
     Raises:
         IOError: An error occurred.
     """
+    logger.info('Build lexicon_index for qid (%s)', sample_size)
     try:
-        logger.info('Build lexicon_index for qid (%d)', sample_size)
         lexicon_index = list(enumerate([word for word
                                         in random.sample(list(lexicon),
                                                          sample_size)
                                         if word in model]))
     except TypeError:
-        logger.info('Build lexicon_index for qid')
         lexicon_index = list(enumerate([word for word in lexicon
                                         if word in model]))
 
@@ -410,9 +409,6 @@ QID = ID du mot
         seen_docno = {}
         for (rank, (docno, sim)) in enumerate(model.most_similar(word,
                                                                  topn=topn)):
-            docno = re.sub(r'[\n\r]', '', docno)
-            docno = docno.strip()
-            docno = docno.lower()
             if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
                 continue
             seen_docno[docno] = 1
