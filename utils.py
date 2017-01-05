@@ -225,3 +225,33 @@ This is intended to be used by emb.build_custom3
         for word in words:
             ret[word] = words
     return ret
+
+
+def split_lexicon_train_test(lexicon, ratio=0.9, shuffle=False):
+    """Split each class of the lexicon in train and test.
+
+    Args:
+        lexicon: A lexicon to split.
+        ratio: The ratio of train/test. 0.9 means 90% of the lexicon
+        will go in the train lexicon.
+        shuffle: A boolean to specify that the lexicon should be
+        shuffled before splitting.
+
+    Returns:
+        A train lexicon and a test lexicon.
+    """
+    train_lexicon = {}
+    test_lexicon = {}
+    lexicon_inv = invert_dict_nonunique(lexicon)
+    for c in lexicon_inv:
+        c_words = lexicon_inv[c]
+        n = len(c_words)
+        if shuffle:
+            random.shuffle(c_words)
+        limit = math.floor(n * ratio)
+        for w in c_words[:limit]:
+            train_lexicon[w] = c
+        for w in c_words[limit:]:
+            test_lexicon[w] = c
+
+    return train_lexicon, test_lexicon
