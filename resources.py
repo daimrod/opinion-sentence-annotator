@@ -68,6 +68,8 @@ SWE_PATH = os.path.expanduser('~/src/thesis/SWE/')
 
 SEMEVAL_SCORER_PATH = os.path.join(semeval16, 'Task4/SemEval2016_task4_submissions_and_scores/')
 
+TREC_EVAL_PATH = os.path.expanduser('~/src/thesis/trec_eval.9.0/')
+
 ## Lexicons
 bing_liu_lexicon_path = dict({'negative': os.path.join(DATA_DIR, 'bing-liu-lexicon/negative-words.txt'),
                               'positive': os.path.join(DATA_DIR, 'bing-liu-lexicon/positive-words.txt')})
