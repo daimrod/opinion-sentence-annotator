@@ -350,7 +350,7 @@ def get_gnews():
 
 def compare_model_with_lexicon(model, lexicon,
                                topn=100,
-                               random_choice=None,
+                               sample_size=None,
                                remove_file=False):
     """Compare model with lexicon with trec_eval script.
 
@@ -375,6 +375,7 @@ QID = ID du mot
         model: variable documentation.
         lexicon: variable documentation.
         topn: variable documentation.
+        sample_size: variable documentation.
 
     Returns:
         Returns information
@@ -383,11 +384,13 @@ QID = ID du mot
         IOError: An error occurred.
     """
     try:
+        logger.info('Build lexicon_index for qid (%d)', sample_size)
         lexicon_index = list(enumerate([word for word
                                         in random.sample(list(lexicon),
-                                                         random_choice)
+                                                         sample_size)
                                         if word in model]))
     except TypeError:
+        logger.info('Build lexicon_index for qid')
         lexicon_index = list(enumerate([word for word in lexicon
                                         if word in model]))
 
@@ -400,14 +403,7 @@ QID = ID du mot
     logger.info('Build Ground Truth Qrel file (%s)', qrel_file.name)
 
     for qid, word in lexicon_index:
-        seen_docno = {}
         for docno in lexicon_inv[lexicon[word]]:
-            docno = re.sub(r'[\n\r]', '', docno)
-            docno = docno.strip()
-            if docno == '' or docno in seen_docno:
-                continue
-
-            seen_docno[docno] = 1
             qrel_file.write('%d 0 %s 1\n' % (qid, docno))
 
     top_file = tempfile.NamedTemporaryFile(mode='w+',
