@@ -178,14 +178,14 @@ class SaveBestModel(Callback):
             else:
                 if self.monitor_op(current, self.best):
                     if self.verbose > 0:
-                        print('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
-                              ' saving model'
-                              % (epoch, self.monitor, self.best, current))
+                        logger.info('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
+                                    ' saving model'
+                                    % (epoch, self.monitor, self.best, current))
                     self.best = current
                 else:
                     if self.verbose > 0:
-                        print('Epoch %05d: %s did not improve' %
-                              (epoch, self.monitor))
+                        logger.info('Epoch %05d: %s did not improve' %
+                                    (epoch, self.monitor))
         self.cnn_base.best_model = self.model
         self.cnn_base.best_score = self.best
 
@@ -325,6 +325,7 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         for j in range(self.nb_try):
+            logger.info('Try %d', j)
             self.build_model()
 
             self.model.fit(self.train_data, [self.labels] * len(self.preds),
