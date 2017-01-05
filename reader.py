@@ -538,7 +538,7 @@ class UserNameReplacer(Replacer):
 
 
 class NumberReplacer(Replacer):
-    """Replace number with a placeholder"""
+    """Replace number with a placeholder
     >>> r = reader.NumberReplacer(['asdf', 'qwer', ',12', 'asdfkjq23', '1231', '123.12', '123,32'])
     >>> list(r)
         ['asdf', 'qwer', 'NUMBER', 'asdfkjq23', 'NUMBER', 'NUMBER', 'NUMBER']
