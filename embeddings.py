@@ -423,7 +423,8 @@ QID = ID du mot
                                                                  topn=topn)):
             docno = re.sub(r'[\n\r]', '', docno)
             docno = docno.strip()
-            if docno == '' or docno in seen_docno:
+            docno = docno.lower()
+            if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
                 continue
             seen_docno[docno] = 1
             top_file.write('%d 0 %s %d %f runid\n' % (qid, docno, rank, sim))
