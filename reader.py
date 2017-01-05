@@ -546,11 +546,19 @@ class NumberReplacer(Replacer):
         super().__init__(iterable, pattern, repl)
 
 
+class CarriageRemover(Replacer):
+    def __init__(self, iterable):
+        pattern = r'[\n\r]'
+        repl = ''
+        super().__init__(iterable, pattern, repl)
+
+
 class GenericTextReader(object):
     def __init__(self, iterable,
                  tokenizer=feat.happyfuntokenizer,
                  lower=False):
         self.iterable = iterable
+        self.iterable = CarriageRemover(iterable)
         if lower:
             self.iterable = Lowerer(self.iterable)
         self.iterable = URLReplacer(self.iterable)
