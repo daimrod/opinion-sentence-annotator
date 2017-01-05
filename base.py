@@ -10,9 +10,7 @@ from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
 from reader import read_semeval_dataset
 
-from reader import Tokenizer
-from reader import URLReplacer
-from reader import UserNameReplacer
+from reader import GenericTextReader
 
 from utils import merge_classes
 from utils import strings_to_integers
@@ -59,9 +57,7 @@ def preprocess(dataset_path, force=False, labels=['positive', 'negative', 'neutr
 
     logger.info('Normalize and tokenize the text')
     generator = (d['text'] for d in dataset.data)
-    preprocessor = URLReplacer(generator)
-    preprocessor = UserNameReplacer(preprocessor)
-    preprocessor = Tokenizer(preprocessor, feat.happyfuntokenizer)
+    preprocessor = GenericTextReader(generator, lower=False)
     for (d, tok) in zip(dataset.data, preprocessor):
         d['tok'] = tok
 
