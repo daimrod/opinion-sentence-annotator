@@ -2,15 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from sklearn.pipeline import FeatureUnion
-from sklearn.pipeline import Pipeline
+
 import tempfile
 from subprocess import PIPE, Popen
 import os
 import random
 import codecs
-from resources import SEMEVAL_SCORER_PATH
+import math
 
+from sklearn.pipeline import FeatureUnion
+from sklearn.pipeline import Pipeline
+
+from resources import SEMEVAL_SCORER_PATH
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
