@@ -6,9 +6,13 @@ import logging
 import os
 from subprocess import Popen, PIPE
 import tempfile
+import codecs
+import re
+import random
 
 from collections import Counter
 from collections import OrderedDict
+from collections import defaultdict
 
 import gensim
 import numpy as np
