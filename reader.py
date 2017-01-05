@@ -8,6 +8,8 @@ import ast
 import re
 import itertools
 
+import features as feat
+
 
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
@@ -446,6 +448,15 @@ class Tokenizer(object):
             yield self.tokenizer(s)
 
 
+class Lowerer(object):
+    def __init__(self, iterable):
+        self.iterable = iterable
+
+    def __iter__(self):
+        for s in self.iterable:
+            yield s.lower()
+
+
 class Splitter(object):
     def __init__(self, iterable, split=' '):
         self.iterable = iterable
@@ -493,19 +504,60 @@ class FuzzyOpinionRecognizer(object):
                 continue
 
 
-class URLReplacer(object):
-    def __init__(self, iterable):
+class Replacer(object):
+    def __init__(self, iterable, pattern=None, repl=None):
         self.iterable = iterable
+        self.pattern = pattern
+        self.repl = repl
+
+    def set_iterable(self, iterable):
+        self.iterable = iterable
+        return self
+    __call__ = set_iterable
 
     def __iter__(self):
         for s in self.iterable:
-            yield re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', 'url', s)
+            yield re.sub(self.pattern, self.repl, s)
 
 
-class UserNameReplacer(object):
+class URLReplacer(Replacer):
     def __init__(self, iterable):
+        pattern = r'^http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+$'
+        url = 'URL'
+        super().__init__(iterable, pattern, url)
+
+
+class UserNameReplacer(Replacer):
+    def __init__(self, iterable):
+        pattern = r'^(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)$'
+        repl = '@USER'
+        super().__init__(iterable, pattern, repl)
+
+
+class NumberReplacer(Replacer):
+    '''
+    >>> r = reader.NumberReplacer(['asdf', 'qwer', ',12', 'asdfkjq23', '1231', '123.12', '123,32'])
+    >>> list(r)
+        ['asdf', 'qwer', 'NUMBER', 'asdfkjq23', 'NUMBER', 'NUMBER', 'NUMBER']
+'''
+    def __init__(self, iterable):
+        pattern = r'^[0-9]*[.,]?[0-9]+$'
+        repl = 'NUMBER'
+        super().__init__(iterable, pattern, repl)
+
+
+class GenericTextReader(object):
+    def __init__(self, iterable,
+                 tokenizer=feat.happyfuntokenizer,
+                 lower=False):
         self.iterable = iterable
+        if lower:
+            self.iterable = Lowerer(self.iterable)
+        self.iterable = URLReplacer(self.iterable)
+        self.iterable = UserNameReplacer(self.iterable)
+        self.iterable = NumberReplacer(self.iterable)
+        self.iterable = Tokenizer(self.iterable, tokenizer)
 
     def __iter__(self):
         for s in self.iterable:
-            yield re.sub(r'(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)', '@user', s)
+            yield s
