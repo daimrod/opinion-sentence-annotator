@@ -362,7 +362,7 @@ class CNNBase(FullPipeline):
                            batch_size=self.batch_size,
                            verbose=1,
                            callbacks=[SaveBestModel(self,
-                                                    '.',
+                                                    'best_model',
                                                     monitor='val_fmeasure',
                                                     mode='max')],
                            shuffle=self.shuffle)
