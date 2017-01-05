@@ -198,7 +198,7 @@ class CNNBase(FullPipeline):
                  test_only_labels=['positive', 'negative', 'neutral'],
                  repreprocess=False,
                  nb_epoch=2, batch_size=128,
-                 nb_try=1,
+                 nb_try=1, test_between_try=True,
                  max_sequence_length=1000,
                  shuffle=True,
                  max_nb_words=20000,
@@ -221,6 +221,7 @@ class CNNBase(FullPipeline):
         self.best_model = None
         self.best_score = None
         self.nb_try = nb_try
+        self.test_between_try = test_between_try
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -338,6 +339,9 @@ class CNNBase(FullPipeline):
                                                     monitor='val_fmeasure',
                                                     mode='max')],
                            shuffle=self.shuffle)
+            if self.test_between_try:
+                self.run_test()
+                self.print_results()
 
     def run_test(self):
         super().run_test()
