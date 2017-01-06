@@ -35,8 +35,7 @@ def main():
                         help='Output file')
     args = parser.parse_args()
     model = emb.get_custom0()
-    lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                            res.bing_liu_lexicon_path['positive'])
+    lexicon = read_bing_liu(res.bing_liu_lexicon_path)
     print('Save inequalities to %s', args.output)
     feat.find_ineq(model, lexicon, args.output)
 

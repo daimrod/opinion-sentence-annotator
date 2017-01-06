@@ -25,8 +25,7 @@ import embeddings as emb
 import resources as res
 import reader
 
-lexicon = reader.read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                               res.bing_liu_lexicon_path['positive'])
+lexicon = reader.read_bing_liu(res.bing_liu_lexicon_path)
 word2vec_param = emb.default_word2vec_param
 word2vec_param['workers'] = 6
 

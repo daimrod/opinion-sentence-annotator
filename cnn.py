@@ -272,6 +272,7 @@ class CNNBase(FullPipeline):
                                          trainable=False)
 
     def load_trainable_embedding(self):
+        logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         # load pre-trained word embeddings into an Embedding layer
         # note that we set trainable = False so as to keep the embeddings fixed
@@ -462,8 +463,7 @@ CNNRegister['CG_custom0'] = CNNChengGuo_Custom0
 class CNNChengGuo_Custom1(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
 CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
@@ -471,8 +471,7 @@ CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 class CNNChengGuo_Custom3(CNNChengGuo):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
                                            lexicon=self.bing_liu_lexicon)
@@ -537,8 +536,7 @@ CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline_custom0
 class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
 CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
 
@@ -546,8 +544,7 @@ CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
 class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
                                            lexicon=self.bing_liu_lexicon)
@@ -627,8 +624,7 @@ CNNRegister['Rouvier2016_custom0'] = CNNRouvier2016_custom0
 class CNNRouvier2016_custom1(CNNRouvier2016):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon)
 CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
 
@@ -636,8 +632,7 @@ CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
 class CNNRouvier2016_custom3(CNNRouvier2016):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path['negative'],
-                                              res.bing_liu_lexicon_path['positive'])
+        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
                                            lexicon=self.bing_liu_lexicon)

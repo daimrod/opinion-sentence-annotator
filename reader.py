@@ -183,12 +183,11 @@ def read_semeval_dataset(ipath, separator='\t',
     return dataset
 
 
-def read_bing_liu(neg_path, pos_path):
+def read_bing_liu(paths):
     """Return a dictionary of negative/positive words.
 
     Args:
-        neg_path: variable documentation.
-        pos_path: variable documentation.
+        paths: A dictionary of positive and negative path.
 
      Returns:
         A dictionary of positive and negative words.
@@ -197,8 +196,7 @@ def read_bing_liu(neg_path, pos_path):
         IOError: An error occurred.
     """
     ret = {}
-    for (path, c) in [(neg_path, 'negative'),
-                      (pos_path, 'positive')]:
+    for (c, path) in paths.items():
         with codecs.open(path, 'r', 'utf-8') as ifile:
             for word in ifile:
                 word = word.strip()
