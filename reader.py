@@ -530,7 +530,7 @@ class URLReplacer(Replacer):
 class UserNameReplacer(Replacer):
     """Replace Twitter username with a placeholder"""
     def __init__(self, iterable):
-        pattern = r'\b(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)\b'
+        pattern = r'@[A-Za-z0-9_]+\b'
         repl = '_user_'
         super().__init__(iterable, pattern=pattern, repl=repl)
 
