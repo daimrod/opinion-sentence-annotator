@@ -182,6 +182,9 @@ def split_train_valid(input_path, valid_num=3000):
     nb_line = 0
     with codecs.open(input_path, 'r', 'utf-8') as ifile:
         nb_line = len([line for line in ifile])
+    if valid_num <= 1 and valid_num >= 0:
+        valid_num = math.floor(nb_line * valid_num)
+
     valid_indexes = random.sample(range(nb_line), valid_num)
     try:
         ifile = codecs.open(input_path, 'r', 'utf-8')
