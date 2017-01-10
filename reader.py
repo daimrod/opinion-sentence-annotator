@@ -522,17 +522,17 @@ class Replacer(object):
 class URLReplacer(Replacer):
     """Replace url with a placeholder"""
     def __init__(self, iterable):
-        pattern = r'^http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+$'
+        pattern = r'\bhttp[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+\b'
         url = '_url_'
-        super().__init__(iterable, pattern, url)
+        super().__init__(iterable, pattern=pattern, repl=url)
 
 
 class UserNameReplacer(Replacer):
     """Replace Twitter username with a placeholder"""
     def __init__(self, iterable):
-        pattern = r'^(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)$'
+        pattern = r'\b(?<=^|(?<=[^a-zA-Z0-9-_\.]))@([A-Za-z_]+[A-Za-z0-9_]+)\b'
         repl = '_user_'
-        super().__init__(iterable, pattern, repl)
+        super().__init__(iterable, pattern=pattern, repl=repl)
 
 
 class NumberReplacer(Replacer):
@@ -542,9 +542,9 @@ class NumberReplacer(Replacer):
         ['asdf', 'qwer', 'NUMBER', 'asdfkjq23', 'NUMBER', 'NUMBER', 'NUMBER']
 """
     def __init__(self, iterable):
-        pattern = r'^[0-9]*[.,]?[0-9]+$'
+        pattern = r'\b[0-9]*[.,]?[0-9]+\b'
         repl = '_number_'
-        super().__init__(iterable, pattern, repl)
+        super().__init__(iterable, pattern=pattern, repl=repl)
 
 
 class CarriageRemover(Replacer):
@@ -552,7 +552,15 @@ class CarriageRemover(Replacer):
     def __init__(self, iterable):
         pattern = r'[\n\r]'
         repl = ''
-        super().__init__(iterable, pattern, repl)
+        super().__init__(iterable, pattern=pattern, repl=repl)
+
+
+class NSpaceRemover(Replacer):
+    """Remove spaces when there is more than 1."""
+    def __init__(self, iterable):
+        pattern = r'[\s\t\n\r]+'
+        repl = ' '
+        super().__init__(iterable, pattern=pattern, repl=repl)
 
 
 class GenericTextReader(object):
@@ -560,14 +568,20 @@ class GenericTextReader(object):
                  tokenizer=feat.happyfuntokenizer,
                  lower=False):
         self.iterable = iterable
+        self.iterable = Tokenizer(self.iterable, tokenizer)
         self.iterable = CarriageRemover(iterable)
+        self.iterable = NSpaceRemover(iterable)
         if lower:
             self.iterable = Lowerer(self.iterable)
         self.iterable = URLReplacer(self.iterable)
         self.iterable = UserNameReplacer(self.iterable)
         self.iterable = NumberReplacer(self.iterable)
-        self.iterable = Tokenizer(self.iterable, tokenizer)
 
     def __iter__(self):
         for s in self.iterable:
             yield s
+
+
+def w_norm(word):
+    reader = GenericTextReader([word], lower=True)
+    return list(reader)[0]
