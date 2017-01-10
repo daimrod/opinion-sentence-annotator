@@ -542,7 +542,7 @@ class NumberReplacer(Replacer):
         ['asdf', 'qwer', 'NUMBER', 'asdfkjq23', 'NUMBER', 'NUMBER', 'NUMBER']
 """
     def __init__(self, iterable):
-        pattern = r'\b[0-9]*[.,]?[0-9]+\b'
+        pattern = r'\b-?[0-9]*[.,]?[0-9]+\b'
         repl = '_number_'
         super().__init__(iterable, pattern=pattern, repl=repl)
 
