@@ -205,14 +205,18 @@ inequalities)."""
     source = GenericTextReader(source)
     source = Splitter(source)
 
-    input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
-    output_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                             delete=False, prefix='input')
+    output_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                              delete=False, prefix='output')
     output_file.close()
 
-    ineq_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    ineq_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                            delete=False, prefix='ineq')
     ineq_file.close()
 
-    vocab_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False)
+    vocab_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                             delete=False, prefix='vocab')
 
     try:
         vocab = Counter()
@@ -235,7 +239,7 @@ inequalities)."""
 
         input_file.close()
         cmd = ['bin/SWE_Train',
-               '-train', train_path,
+               '-train', input_file.name,
                '-read-vocab', vocab_file.name,
                '-output', output_file.name,
                '-size', str(word2vec_param['size']),
