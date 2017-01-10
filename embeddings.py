@@ -27,6 +27,7 @@ from reader import Splitter
 from reader import LineReader
 from reader import LexiconProjecter
 from reader import GenericTextReader
+from reader import w_norm
 
 import features as feat
 import resources as res
@@ -194,15 +195,21 @@ def get_custom2():
 
 def build_custom2(train_path,
                   word2vec_param=default_word2vec_param,
-                  lexicon=None,
+                  lexicon=None, valid_num=0.1, top=10,
                   clean_after=True):
     """Build a Word2Vec model using SWE method (optimization with
-inequalities)."""
+inequalities).
+
+    Args:
+        lexicon: The lexicon used to build the inequalities.
+        valid_num: How much inequations should be used for cross-validation (either a floar between 0 and 1 or an integer.
+        top: See feat.build_ineq_for_model
+        clean_after: Clean the files after building the model if True."""
     if lexicon is None:
         raise ValueError('Empty lexicon')
     model = None
     source = LineReader(train_path)
-    source = GenericTextReader(source)
+    source = GenericTextReader(source, lower=True)
     source = Splitter(source)
 
     input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
@@ -231,11 +238,18 @@ inequalities)."""
         vocab_file.close()
 
         model0 = get_custom0(word2vec_param=word2vec_param)
-        feat.build_ineq_for_model(model0, lexicon,
+        new_lexicon = {}
+        for w in lexicon:
+            if w in vocab:
+                # Ignore word with freq < min_count
+                if 'min_count' in word2vec_param and vocab[w] < word2vec_param['min_count']:
+                        continue
+                new_lexicon[w] = lexicon[w]
+        feat.build_ineq_for_model(model0, new_lexicon,
                                   output_path=ineq_file.name,
                                   vocab=list(vocab),
-                                  top=10)
-        utils.split_train_valid(ineq_file.name)
+                                  top=top)
+        utils.split_train_valid(ineq_file.name, valid_num=valid_num)
 
         input_file.close()
         cmd = ['bin/SWE_Train',
@@ -260,13 +274,11 @@ inequalities)."""
         out, err = p.communicate()
         err = err.decode()
         out = out.decode()
-        if p.returncode != 0:
-            logger.error(out)
-            logger.error(err)
-        else:
-            logger.info(out)
+        logger.info(out)
+        logger.error(err)
+        if p.returncode == 0:
             model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
-                                                                binary=True)
+                                                                binary=False)
     finally:
         if clean_after:
             os.remove(vocab_file.name)
