@@ -61,7 +61,7 @@ default_word2vec_param = {
 
     # min_count = ignore all words with total frequency lower than
     # this.
-    'min_count': 5,
+    'min_count': 20,
 
     # max_vocab_size = limit RAM during vocabulary building; if there
     # are more unique words than this, then prune the infrequent ones.
