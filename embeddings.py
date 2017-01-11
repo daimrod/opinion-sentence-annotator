@@ -317,18 +317,23 @@ def build_custom3(initial_model,
     initial_model_file.close()
     initial_model.save(initial_model_file.name)
     model = gensim.models.Word2Vec.load(initial_model_file.name)
+    old_lexicon = lexicon
+    lexicon = {}
+    for w in old_lexicon:
+        if w in model:
+            lexicon[w] = old_lexicon[w]
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+
     for it in range(n_iter):
         # loop through every node also in ontology (else just use data
         # estimate)
-        count = 0
+        logger.info('iter: %d/%d', it, n_iter)
         for word in lexicon:
-            count += 1
-            if count % 100 == 0:
-                logger.info('iter: %d/%d, word %d/%d', it, n_iter, count, len(lexicon))
             if word not in model:
                 continue
             i = model.vocab[word].index
-            word_neighbours = [w for w in lexicon[word] if w in model]
+            word_neighbours = [w for w in lexicon_inv[lexicon[word]]
+                               if w != word]
             num_neighbours = len(word_neighbours)
 
             if b_ij == 'degree':
@@ -346,7 +351,76 @@ def build_custom3(initial_model,
 
             # Vectorized version of the above
             word_neighbours = [model.vocab[w].index for w in word_neighbours]
-            model.syn0[i] = b_ij * np.sum(model.syn0[word_neighbours], axis=0)
+            model.syn0[i] = model.syn0[i] + b_ij * np.sum(model.syn0[word_neighbours], axis=0)
+            model.syn0[i] = model.syn0[i] / (num_neighbours * (b_ij + a_i))
+    return model
+
+
+def build_custom3_1(initial_model,
+                    lexicon={},
+                    a_i=1, b_ij=1, c_ij=1, n_iter=10):
+    """Derived from faruqui:2014:NIPS-DLRLW method.
+Put same class closer and other classes away."""
+    initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
+                                                     encoding='utf-8',
+                                                     delete=False)
+    initial_model_file.close()
+    initial_model.save(initial_model_file.name)
+    model = gensim.models.Word2Vec.load(initial_model_file.name)
+    old_lexicon = lexicon
+    lexicon = {}
+    for w in old_lexicon:
+        if w in model:
+            lexicon[w] = old_lexicon[w]
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+
+    for it in range(n_iter):
+        # loop through every node also in ontology (else just use data
+        # estimate)
+        count = 0
+        for word in lexicon:
+            count += 1
+            if count % 100 == 0:
+                logger.info('iter: %d/%d, word %d/%d', it, n_iter, count, len(lexicon))
+            if word not in model:
+                continue
+            i = model.vocab[word].index
+            word_neighbours = [w for w in lexicon_inv[lexicon[word]]
+                               if w != word]
+
+            # Non-neighbours are words with different classes than WORD
+            word_not_neighbours = []
+            for c in lexicon_inv:
+                if c != lexicon[word]:
+                    word_not_neighbours.extend(lexicon_inv[c])
+            # Remove duplicate
+            word_not_neighbours = list(set(word_not_neighbours))
+
+            num_neighbours = len(word_neighbours)
+            num_not_neighbours = len(word_not_neighbours)
+
+            if b_ij == 'degree':
+                b_ij = 1/num_neighbours
+
+            if c_ij == 'degree':
+                c_ij = 1/num_not_neighbours
+
+            # FIXE use not_neighbours
+            #no neighbours, pass - use data estimate
+            if num_neighbours == 0 and num_not_neighbours == 0:
+                continue
+            # the weight of the data estimate if the number of neighbours
+            model.syn0[i] = num_neighbours * a_i * initial_model.syn0[i]
+            # loop over neighbours and add to new vector
+            # for pp_word in word_neighbours:
+            #     j = model.vocab[pp_word].index
+            #     model.syn0[i] += b_ij * model.syn0[j]
+
+            # Vectorized version of the above
+            word_neighbours = [model.vocab[w].index for w in word_neighbours]
+            model.syn0[i] = model.syn0[i] + b_ij * np.sum(model.syn0[word_neighbours], axis=0)
+            word_not_neighbours = [model.vocab[w].index for w in word_not_neighbours]
+            model.syn0[i] = model.syn0[i] - c_ij * np.sum(model.syn0[word_not_neighbours], axis=0)
             model.syn0[i] = model.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
 
@@ -364,7 +438,8 @@ def get_gnews():
 def compare_model_with_lexicon(model, lexicon,
                                topn=100,
                                sample_size=None,
-                               remove_file=False):
+                               remove_file=False,
+                               normalize_word=True):
     """Compare model with lexicon with trec_eval script.
 
 https://faculty.washington.edu/levow/courses/ling573_SPR2011/hw/trec_eval_desc.htm
@@ -397,14 +472,20 @@ QID = ID du mot
         IOError: An error occurred.
     """
     logger.info('Build lexicon_index for qid (%s)', sample_size)
-    try:
-        lexicon_index = list(enumerate([word for word
-                                        in random.sample(list(lexicon),
-                                                         sample_size)
-                                        if word in model]))
-    except TypeError:
-        lexicon_index = list(enumerate([word for word in lexicon
-                                        if word in model]))
+    if sample_size is None:
+        sample_size = len(list(lexicon))
+    else:
+        sample_size = min(sample_size, len(list(lexicon)))
+
+    if normalize_word:
+        model_vocab = [w_norm(w) for w in model.vocab]
+    else:
+        model_vocab = list(model.vocab)
+
+    lexicon_index = list(enumerate([word for word
+                                    in random.sample(list(lexicon),
+                                                     sample_size)
+                                    if word in model_vocab]))
 
     lexicon_inv = utils.invert_dict_nonunique(lexicon)
 
@@ -427,17 +508,22 @@ QID = ID du mot
 
     for qid, word in lexicon_index:
         seen_docno = {}
-        for (rank, (docno, sim)) in enumerate(model.most_similar(word,
+        word_in_vocab = list(model.vocab)[model_vocab.index(word)]
+        for (rank, (docno, sim)) in enumerate(model.most_similar(word_in_vocab,
                                                                  topn=topn)):
             if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
                 continue
             seen_docno[docno] = 1
             top_file.write('%d 0 %s %d %f runid\n' % (qid, docno, rank, sim))
+            if len(seen_docno) == topn:
+                break
 
     logger.info('Run trec_eval script')
     ret = None
     try:
-        p = Popen(['./trec_eval', qrel_file.name, top_file.name],
+        p = Popen(['./trec_eval',
+                   qrel_file.name,
+                   top_file.name],
                   stdout=PIPE, stderr=PIPE, cwd=res.TREC_EVAL_PATH)
         out, err = p.communicate()
         ret = out + err
@@ -449,4 +535,4 @@ QID = ID du mot
         os.remove(qrel_file.name)
         os.remove(top_file.name)
 
-    return None
+    return ret
