@@ -368,7 +368,29 @@ def read_nrc_emotion(nrc_path):
         for line in ifile:
             line = line.strip()
             word, affect, valence = line.split('\t')
-            if affect == 'positive' or affect == 'negative':
+            if valence == '1' and (affect == 'positive' or affect == 'negative'):
+                ret[word] = affect
+    return ret
+
+
+def read_nrc_emotions(nrc_path):
+    """Return a dictionary with emotions associated to words.
+
+    Args:
+        nrc_path: variable documentation.
+
+    Returns:
+        A dictionary of words with their emotions.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(nrc_path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            word, affect, valence = line.split('\t')
+            if valence == '1' and affect != 'positive' and affect != 'negative':
                 ret[word] = affect
     return ret
 
