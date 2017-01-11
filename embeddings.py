@@ -208,7 +208,7 @@ inequalities).
     if lexicon is None:
         raise ValueError('Empty lexicon')
     model = None
-    source = LineReader(train_path)
+    source = TwitterLoggerTextReader(train_path)
     source = GenericTextReader(source, lower=True)
     source = Splitter(source)
 
@@ -226,6 +226,7 @@ inequalities).
                                              delete=False, prefix='vocab')
 
     try:
+        logger.info('Build vocabulary file')
         vocab = Counter()
         for line in source:
             vocab.update(line)
@@ -234,17 +235,20 @@ inequalities).
         vocab = OrderedDict(sorted(vocab.items(), key=lambda t: t[1],
                                    reverse=True))
         for word in vocab:
+            # Ignore word with freq < min_count
+            if 'min_count' in word2vec_param and vocab[word] < word2vec_param['min_count']:
+                del vocab[word]
+                continue
             vocab_file.write('%s\t%d\n' % (word, vocab[word]))
         vocab_file.close()
 
         model0 = get_custom0(word2vec_param=word2vec_param)
         new_lexicon = {}
         for w in lexicon:
-            if w in vocab:
-                # Ignore word with freq < min_count
-                if 'min_count' in word2vec_param and vocab[w] < word2vec_param['min_count']:
-                        continue
-                new_lexicon[w] = lexicon[w]
+            # Ignore word not in vocab nor in model
+            if w not in model0 or w not in vocab:
+                continue
+            new_lexicon[w] = lexicon[w]
         feat.build_ineq_for_model(model0, new_lexicon,
                                   output_path=ineq_file.name,
                                   vocab=list(vocab),
