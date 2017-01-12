@@ -42,8 +42,8 @@ lexicons = [('bing_liu_lexicon', bing_liu_lexicon),
             ('nrc_emotion_lexicon', nrc_emotion_lexicon),
             ('nrc_emotions_lexicon', nrc_emotions_lexicon)]
 
-# logger.info('bing_liu_lexicon')
-# logger.info('model0')
+logger.info('bing_liu_lexicon')
+logger.info('model0')
 # emb.compare_model_with_lexicon(model0, bing_liu_lexicon, topn=topn, sample_size=sample_size)
 
 # model3 = emb.build_custom3(model0, bing_liu_lexicon)
@@ -64,7 +64,7 @@ lexicons = [('bing_liu_lexicon', bing_liu_lexicon),
 # model3 = emb.build_custom3_1(model0, nrc_emotions_lexicon)
 # emb.compare_model_with_lexicon(model3, bing_liu_lexicon, topn=topn, sample_size=sample_size)
 
-# logger.info('model1')
+logger.info('model1')
 # emb.compare_model_with_lexicon(model1, bing_liu_lexicon, topn=topn, sample_size=sample_size)
 
 # model3 = emb.build_custom3(model1, bing_liu_lexicon)
@@ -85,7 +85,7 @@ lexicons = [('bing_liu_lexicon', bing_liu_lexicon),
 # model3 = emb.build_custom3_1(model1, nrc_emotions_lexicon)
 # emb.compare_model_with_lexicon(model3, bing_liu_lexicon, topn=topn, sample_size=sample_size)
 
-# logger.info('modelGnews')
+logger.info('modelGnews')
 # emb.compare_model_with_lexicon(modelGnews, bing_liu_lexicon, topn=topn, sample_size=sample_size)
 
 # modelGnews = emb.get_gnews()
@@ -137,7 +137,7 @@ emb.compare_model_with_lexicon(model3, nrc_emotion_lexicon, topn=topn, sample_si
 model3 = emb.build_custom3_1(model0, nrc_emotions_lexicon)
 emb.compare_model_with_lexicon(model3, nrc_emotion_lexicon, topn=topn, sample_size=sample_size)
 
-# logger.info('model1')
+logger.info('model1')
 # emb.compare_model_with_lexicon(model1, nrc_emotion_lexicon, topn=topn, sample_size=sample_size)
 
 # model3 = emb.build_custom3(model1, bing_liu_lexicon)
@@ -210,7 +210,7 @@ emb.compare_model_with_lexicon(model3, nrc_emotions_lexicon, topn=topn, sample_s
 model3 = emb.build_custom3_1(model0, nrc_emotions_lexicon)
 emb.compare_model_with_lexicon(model3, nrc_emotions_lexicon, topn=topn, sample_size=sample_size)
 
-# logger.info('model1')
+logger.info('model1')
 # emb.compare_model_with_lexicon(model1, nrc_emotions_lexicon, topn=topn, sample_size=sample_size)
 
 # model3 = emb.build_custom3(model1, bing_liu_lexicon)
