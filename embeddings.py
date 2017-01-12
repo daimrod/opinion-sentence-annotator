@@ -309,15 +309,21 @@ def old_get_custom3():
 
 def build_custom3(initial_model,
                   lexicon={},
-                  a_i=0.5, b_ij=0.5, n_iter=10):
-    """Retrofit a model using faruqui:2014:NIPS-DLRLW method."""
-    initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
-                                                     encoding='utf-8',
-                                                     delete=False)
-    initial_model_file.close()
-    initial_model.save(initial_model_file.name)
-    model = gensim.models.Word2Vec.load(initial_model_file.name)
-    os.remove(initial_model_file.name)
+                  a_i=0.5, b_ij=0.5, n_iter=10, in_place=True):
+    """Retrofit a model using faruqui:2014:NIPS-DLRLW method.
+
+    Args:
+        in_place: Modify the given model instead of copying it if True."""
+    if not in_place:
+        initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
+                                                         encoding='utf-8',
+                                                         delete=False)
+        initial_model_file.close()
+        initial_model.save(initial_model_file.name)
+        model = gensim.models.Word2Vec.load(initial_model_file.name)
+        os.remove(initial_model_file.name)
+    else:
+        model = initial_model
     old_lexicon = lexicon
     lexicon = {}
     for w in old_lexicon:
@@ -358,16 +364,22 @@ def build_custom3(initial_model,
 
 def build_custom3_1(initial_model,
                     lexicon={},
-                    a_i=1, b_ij=1, c_ij=1, n_iter=10):
+                    a_i=1, b_ij=1, c_ij=1, n_iter=10, in_place=True):
     """Derived from faruqui:2014:NIPS-DLRLW method.
-Put same class closer and other classes away."""
-    initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
-                                                     encoding='utf-8',
-                                                     delete=False)
-    initial_model_file.close()
-    initial_model.save(initial_model_file.name)
-    model = gensim.models.Word2Vec.load(initial_model_file.name)
-    os.remove(initial_model_file.name)
+Put same class closer and other classes away.
+
+    Args:
+        in_place: Modify the given model instead of copying it if True."""
+    if not in_place:
+        initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
+                                                         encoding='utf-8',
+                                                         delete=False)
+        initial_model_file.close()
+        initial_model.save(initial_model_file.name)
+        model = gensim.models.Word2Vec.load(initial_model_file.name)
+        os.remove(initial_model_file.name)
+    else:
+        model = initial_model
     old_lexicon = lexicon
     lexicon = {}
     for w in old_lexicon:
