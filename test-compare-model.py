@@ -54,6 +54,17 @@ for name1, lexicon1 in lexicons:
             emb.compare_model_with_lexicon(model3, lexicon1, topn=topn,
                                            sample_size=sample_size)
 
+# Bulk testing
+# for name1, lexicon1 in lexicons:
+#     for m_name, model in models:
+#         print('emb.compare_model_with_lexicon(%s, %s, topn=topn, sample_size=sample_size)' % (m_name, name1))
+#         for name2, lexicon2 in lexicons:
+#             print('model3 = emb.build_custom3(%s, %s)' % (m_name, name2))
+#             print('emb.compare_model_with_lexicon(model3, %s, topn=topn, sample_size=sample_size)' % (name1))
+#         for name2, lexicon2 in lexicons:
+#             print('model3 = emb.build_custom3_1(%s, %s)' % (m_name, name2))
+#             print('emb.compare_model_with_lexicon(model3, %s, topn=topn, sample_size=sample_size)' % (name1))
+
 # for ratio in np.arange(0.1, 0.9, 0.1):
 #     logger.info('split bing with ratio %f', ratio)
 #     lex = lexicons[0][1]
