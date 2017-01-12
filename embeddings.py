@@ -317,6 +317,7 @@ def build_custom3(initial_model,
     initial_model_file.close()
     initial_model.save(initial_model_file.name)
     model = gensim.models.Word2Vec.load(initial_model_file.name)
+    os.remove(initial_model_file.name)
     old_lexicon = lexicon
     lexicon = {}
     for w in old_lexicon:
@@ -366,6 +367,7 @@ Put same class closer and other classes away."""
     initial_model_file.close()
     initial_model.save(initial_model_file.name)
     model = gensim.models.Word2Vec.load(initial_model_file.name)
+    os.remove(initial_model_file.name)
     old_lexicon = lexicon
     lexicon = {}
     for w in old_lexicon:
