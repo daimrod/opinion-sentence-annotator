@@ -531,6 +531,8 @@ QID = ID du mot
     ret = None
     try:
         p = Popen(['./trec_eval',
+                   '-m', 'all_trec',
+                   '-m', 'P.1,2,5,10,25,50,100,200,500,1000',
                    qrel_file.name,
                    top_file.name],
                   stdout=PIPE, stderr=PIPE, cwd=res.TREC_EVAL_PATH)
