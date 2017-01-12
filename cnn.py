@@ -264,22 +264,20 @@ class CNNBase(FullPipeline):
                 self.embedding_matrix[i] = self.embedding[word]
 
         # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
         self.embedding_layer = Embedding(self.nb_words + 1,
                                          self.embedding_dim,
                                          weights=[self.embedding_matrix],
-                                         input_length=self.max_sequence_length,
-                                         trainable=False)
+                                         input_length=self.max_sequence_length)
+        self.embedding_trainable = False
 
     def load_trainable_embedding(self):
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
         # load pre-trained word embeddings into an Embedding layer
-        # note that we set trainable = False so as to keep the embeddings fixed
         self.embedding_layer = Embedding(self.nb_words + 1,
                                          self.embedding_dim,
-                                         input_length=self.max_sequence_length,
-                                         trainable=True)
+                                         input_length=self.max_sequence_length)
+        self.embedding_trainable = True
 
     def load_resources(self):
         super().load_resources()
@@ -344,6 +342,7 @@ class CNNBase(FullPipeline):
 
     def build_model(self):
         self.model = Model(self.sequence_input, self.preds)
+        self.model.layers[1].trainable = self.embedding_trainable
         print('model built')
         print(self.model.summary())
         self.model.compile(loss='categorical_crossentropy',
@@ -517,6 +516,7 @@ class CNNRouvierBaseline(CNNBase):
 
     def build_model(self):
         self.model = Model(self.sequence_input, self.preds)
+        self.model.layers[1].trainable = self.embedding_trainable
         print('model built')
         print(self.model.summary())
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
@@ -605,6 +605,7 @@ class CNNRouvier2016(CNNBase):
 
     def build_model(self):
         self.model = Model(self.sequence_input, self.preds)
+        self.model.layers[1].trainable = self.embedding_trainable
         print('model built')
         print(self.model.summary())
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
