@@ -327,7 +327,6 @@ def build_custom3(initial_model,
     for it in range(n_iter):
         # loop through every node also in ontology (else just use data
         # estimate)
-        logger.info('iter: %d/%d', it, n_iter)
         for word in lexicon:
             if word not in model:
                 continue
@@ -377,11 +376,7 @@ Put same class closer and other classes away."""
     for it in range(n_iter):
         # loop through every node also in ontology (else just use data
         # estimate)
-        count = 0
         for word in lexicon:
-            count += 1
-            if count % 100 == 0:
-                logger.info('iter: %d/%d, word %d/%d', it, n_iter, count, len(lexicon))
             if word not in model:
                 continue
             i = model.vocab[word].index
@@ -438,7 +433,7 @@ def get_gnews():
 def compare_model_with_lexicon(model, lexicon,
                                topn=100,
                                sample_size=None,
-                               remove_file=False,
+                               clean_after=True,
                                normalize_word=True):
     """Compare model with lexicon with trec_eval script.
 
@@ -531,7 +526,7 @@ QID = ID du mot
         logger.info(ret)
     except Exception:
         pass
-    if remove_file:
+    if clean_after:
         os.remove(qrel_file.name)
         os.remove(top_file.name)
 
