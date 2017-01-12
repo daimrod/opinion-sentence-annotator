@@ -24,9 +24,9 @@ import reader
 import utils
 
 models = []
-models.append(('model0', emb.get_custom0()))
-models.append(('model1', emb.get_custom1()))
-models.append(('modelGnews', emb.get_gnews()))
+models.append(('model0', emb.get_custom0))
+models.append(('model1', emb.get_custom1))
+# models.append(('modelGnews', emb.get_gnews))
 
 topn = 1000
 sample_size = 5000
@@ -38,21 +38,46 @@ lexicons = [('bing', bing_liu_lexicon),
             ('nrc', nrc_emotion_lexicon),
             ('nrc2', nrc_emotions_lexicon)]
 
-for name1, lexicon1 in lexicons:
-    for m_name, model in models:
-        logger.info('Compare %s %s', m_name, name1)
-        emb.compare_model_with_lexicon(model, lexicon1, topn=topn,
-                                       sample_size=sample_size)
-        for name2, lexicon2 in lexicons:
-            logger.info('optimize3 %s with %s', m_name, name2)
-            model3 = emb.build_custom3(model, lexicon2)
-            emb.compare_model_with_lexicon(model3, lexicon1, topn=topn,
-                                           sample_size=sample_size)
-        for name2, lexicon2 in lexicons:
-            logger.info('optimize3_1 %s with %s', m_name, name2)
-            model3 = emb.build_custom3_1(model, lexicon2)
-            emb.compare_model_with_lexicon(model3, lexicon1, topn=topn,
-                                           sample_size=sample_size)
+for m_name, m_fun in models:
+    model = m_fun()
+    for l_name, l_lex in lexicons:
+        logger.info('Compare %s on %s', m_name, l_name)
+        emb.compare_model_with_lexicon(model, l_lex)
+
+        first = True
+        for l_name2, l_lex2 in lexicons:
+            if first:
+                first = False
+            else:
+                model = m_fun()
+            logger.info('Retrofit3 %s with %s', m_name, l_name2)
+            model3 = emb.build_custom3(model, l_lex2)
+            logger.info('Compare %s+3 on %s', m_name, l_name)
+            emb.compare_model_with_lexicon(model3, l_lex)
+
+        for l_name2, l_lex2 in lexicons:
+            model = m_fun()
+            logger.info('Retrofit3_1 %s with %s', m_name, l_name2)
+            model3 = emb.build_custom3_1(model, l_lex2)
+            logger.info('Compare %s+3 on %s', m_name, l_name)
+            emb.compare_model_with_lexicon(model3, l_lex)
+
+
+# for name1, lexicon1 in lexicons:
+#     for m_name, model in models:
+#         logger.info('Compare %s %s', m_name, name1)
+#         emb.compare_model_with_lexicon(model, lexicon1, topn=topn,
+#                                        sample_size=sample_size)
+#         for name2, lexicon2 in lexicons:
+#             logger.info('optimize3 %s with %s', m_name, name2)
+#             model3 = emb.build_custom3(model, lexicon2)
+#             emb.compare_model_with_lexicon(model3, lexicon1, topn=topn,
+#                                            sample_size=sample_size)
+#         for name2, lexicon2 in lexicons:
+#             logger.info('optimize3_1 %s with %s', m_name, name2)
+#             model3 = emb.build_custom3_1(model, lexicon2)
+#             emb.compare_model_with_lexicon(model3, lexicon1, topn=topn,
+#                                            sample_size=sample_size)
 
 # Bulk testing
 # for name1, lexicon1 in lexicons:
