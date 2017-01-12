@@ -1,8 +1,8 @@
 # THEANO_FLAGS=mode=FAST_RUN,floatX=float32,device=gpu python test-theano.py
 # THEANO_FLAGS=mode=FAST_RUN,floatX=float32,device=cpu python test-theano.py
 
-import theano.sandbox.cuda
-theano.sandbox.cuda.use('gpu1')
+# import theano.sandbox.cuda
+# theano.sandbox.cuda.use('gpu1')
 
 from theano import function, config, shared, sandbox
 import theano.tensor as T
