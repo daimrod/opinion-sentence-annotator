@@ -147,14 +147,14 @@ def make_get_model(build_function, name):
                word2vec_param=default_word2vec_param,
                force=False,
                **kwargs):
+        saved_model_path = 'size_%d_window_%d_%s' % (word2vec_param.size,
+                                                     word2vec_param.window,
+                                                     saved_model_path)
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
             model = build_function(train_path, word2vec_param=word2vec_param, **kwargs)
             model.init_sims(replace=True)
-            saved_model_path = 'size_%d_window_%d_%s' % (word2vec_param.size,
-                                                         word2vec_param.window,
-                                                         saved_model_path)
             model.save(saved_model_path)
         return model
     return helper
