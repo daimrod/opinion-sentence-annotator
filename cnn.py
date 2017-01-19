@@ -3,6 +3,8 @@
 
 import logging
 
+import time
+
 if 'logger' not in locals():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -352,23 +354,27 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         for j in range(self.nb_try):
-            logger.info('Try %d', j)
-            self.build_model()
-
-            self.model.fit(self.train_data, [self.labels] * len(self.preds),
-                           validation_data=(self.dev_data,
-                                            to_categorical(self.dev.target)),
-                           nb_epoch=self.nb_epoch,
-                           batch_size=self.batch_size,
-                           verbose=1,
-                           callbacks=[SaveBestModel(self,
-                                                    'best_model',
-                                                    monitor='val_fmeasure',
-                                                    mode='max')],
-                           shuffle=self.shuffle)
-            if self.test_between_try:
-                self.run_test()
-                self.print_results()
+            for attempt in range(10):
+                try:
+                    self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                                   validation_data=(self.dev_data,
+                                                    to_categorical(self.dev.target)),
+                                   nb_epoch=self.nb_epoch,
+                                   batch_size=self.batch_size,
+                                   verbose=1,
+                                   callbacks=[SaveBestModel(self,
+                                                            'best_model',
+                                                            monitor='val_fmeasure',
+                                                            mode='max')],
+                                   shuffle=self.shuffle)
+                    if self.test_between_try:
+                        self.run_test()
+                        self.print_results()
+                except Exception as ex:
+                    logger.error('Failed at attempt %d' % attempt, ex)
+                    time.sleep(10)
+                else:
+                    break
 
     def run_test(self):
         super().run_test()
