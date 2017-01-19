@@ -547,3 +547,109 @@ QID = ID du mot
         os.remove(top_file.name)
 
     return ret
+
+
+def old_compare_model_with_lexicon(model, lexicon,
+                               topn=100,
+                               sample_size=None,
+                               clean_after=True,
+                               normalize_word=True):
+    """Compare model with lexicon with trec_eval script.
+
+https://faculty.washington.edu/levow/courses/ling573_SPR2011/hw/trec_eval_desc.htm
+http://trec.nist.gov/trec_eval/
+
+./trec_eval qrel top
+
+TOP reponse
+| QID2  | ITER        | DOCNO | RANK        | SIM                    | RUN_ID |
+|-------+-------------+-------+-------------+------------------------+--------|
+|       | 0 (ignored) | word  | 1 (ignored) | similarity score float | RUN_ID |
+
+QREL verite terrain
+| QID | ITER        | DOCNO | REL |
+|-----+-------------+-------+-----|
+|     | 0 (ignored) |       |     |
+
+QID = ID du mot
+
+    Args:
+        model: variable documentation.
+        lexicon: variable documentation.
+        topn: variable documentation.
+        sample_size: variable documentation.
+
+    Returns:
+        Returns information
+
+    Raises:
+        IOError: An error occurred.
+    """
+    logger.info('Build lexicon_index for qid (%s)', sample_size)
+    if sample_size is None:
+        sample_size = len(list(lexicon))
+    else:
+        sample_size = min(sample_size, len(list(lexicon)))
+
+    if normalize_word:
+        model_vocab = [w_norm(w) for w in model.vocab]
+    else:
+        model_vocab = list(model.vocab)
+
+    lexicon_index = list(enumerate([word for word
+                                    in random.sample(list(lexicon),
+                                                     sample_size)
+                                    if word in model_vocab]))
+
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+
+    qrel_file = tempfile.NamedTemporaryFile(mode='w+',
+                                            encoding='utf-8',
+                                            delete=False,
+                                            prefix='qrel')
+    logger.info('Build Ground Truth Qrel file (%s)', qrel_file.name)
+
+    for qid, word in lexicon_index:
+        for docno in lexicon_inv[lexicon[word]]:
+            qrel_file.write('%d 0 %s 1\n' % (qid, docno))
+
+    top_file = tempfile.NamedTemporaryFile(mode='w+',
+                                           encoding='utf-8',
+                                           delete=False,
+                                           prefix='top')
+    logger.info('Build Top (%d) answer from the model (%s)',
+                topn, top_file.name)
+
+    for qid, word in lexicon_index:
+        seen_docno = {}
+        word_in_vocab = list(model.vocab)[model_vocab.index(word)]
+        for (rank, (docno, sim)) in enumerate(model.most_similar(word_in_vocab,
+                                                                 topn=topn)):
+            if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
+                continue
+            seen_docno[docno] = 1
+            top_file.write('%d 0 %s %d %f runid\n' % (qid, docno, rank, sim))
+            if len(seen_docno) == topn:
+                break
+
+    logger.info('Run trec_eval script')
+    ret = None
+    try:
+        p = Popen(['./trec_eval',
+                   '-m', 'all_trec',
+                   '-m', 'P.1,2,5,10,25,50,100,200,500,1000',
+                   qrel_file.name,
+                   top_file.name],
+                  stdout=PIPE, stderr=PIPE, cwd=res.TREC_EVAL_PATH)
+        out, err = p.communicate()
+        ret = out + err
+        ret = ret.decode()
+        logger.info(ret)
+    except Exception:
+        pass
+    if clean_after:
+        os.remove(qrel_file.name)
+        os.remove(top_file.name)
+
+    return ret
+
