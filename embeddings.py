@@ -39,7 +39,7 @@ default_word2vec_param = {
     'sg': 0,
 
     # size is the dimensionality of the feature vectors.
-    'size': 100,
+    'size': 300,
 
     # window is the maximum distance between the current and predicted
     # word within a sentence.
