@@ -231,6 +231,7 @@ class CNNBase(FullPipeline):
                  shuffle=True,
                  max_nb_words=20000,
                  embedding_dim=100,
+                 embedding_trainable=False,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
@@ -250,6 +251,7 @@ class CNNBase(FullPipeline):
         self.best_score = None
         self.nb_try = nb_try
         self.test_between_try = test_between_try
+        self.embedding_trainable = embedding_trainable
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -270,15 +272,14 @@ class CNNBase(FullPipeline):
                                          self.embedding_dim,
                                          weights=[self.embedding_matrix],
                                          input_length=self.max_sequence_length)
-        self.embedding_trainable = False
 
     def load_trainable_embedding(self):
         logger.info('Preparing embedding matrix.')
         self.nb_words = min(self.max_nb_words, len(self.word_index))
-        # load pre-trained word embeddings into an Embedding layer
         self.embedding_layer = Embedding(self.nb_words + 1,
                                          self.embedding_dim,
                                          input_length=self.max_sequence_length)
+        # Embedding not pre-trained, force trainable
         self.embedding_trainable = True
 
     def load_resources(self):
