@@ -447,6 +447,17 @@ def get_gnews():
         raise ValueError
 
 
+def compare_model_with_lexicon_class(model, lexicon,
+                                     **kwargs):
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+    for c in lexicon_inv:
+        c_lexicon = {}
+        for w in lexicon_inv[c]:
+            c_lexicon[w] = c
+        logger.info('Compare with class %s', c)
+        compare_model_with_lexicon(model, lexicon, **kwargs)
+
+
 def compare_model_with_lexicon(model, lexicon,
                                topn=100,
                                sample_size=None,
