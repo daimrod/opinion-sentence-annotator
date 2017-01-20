@@ -352,6 +352,7 @@ class CNNBase(FullPipeline):
                            metrics=[fmeasure])
 
     def run_train(self):
+        self.build_model()
         super().run_train()
         for j in range(self.nb_try):
             for attempt in range(10):
