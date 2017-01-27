@@ -191,7 +191,9 @@ def get_custom2():
     logger.info('Load custom2 model')
     saved_model_path = '/home/jadi-g/src/thesis/SWE/demos/task1_wordsim/EmbedVector_TEXT8/semCOM1.Inter_run1.NEG0.0001/wordembed.semCOM1.dim100.win5.neg5.samp0.0001.inter0.hinge0.add0.decay0.l1.r1.embeded.txt'
     if os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(res.twitter_logger_en_path):
-        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path, binary=True)
+        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path,
+                                                           binary=True,
+                                                           unicode_errors='replace')
     else:
         logger.error('Custom2 model doesn\'t exist %s', saved_model_path)
         raise ValueError
@@ -286,7 +288,8 @@ inequalities).
         logger.error(err)
         if p.returncode == 0:
             model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
-                                                                binary=False)
+                                                                binary=False,
+                                                                unicode_errors='replace')
     finally:
         if clean_after:
             os.remove(vocab_file.name)
@@ -305,7 +308,8 @@ def old_get_custom3():
         (os.path.getmtime(saved_model_path)
          > os.path.getmtime(res.twitter_logger_en_path))):
         return gensim.models.Word2Vec.load_word2vec_format(saved_model_path,
-                                                           binary=True)
+                                                           binary=True,
+                                                           unicode_errors='replace')
     else:
         logger.error('Custom3 model doesn\'t exist %s', saved_model_path)
         raise ValueError
@@ -442,7 +446,9 @@ def get_gnews():
     logger.info('Load gnews model')
     saved_model_path = res.gnews_negative300_path
     if os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(res.twitter_logger_en_path):
-        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path, binary=True)
+        return gensim.models.Word2Vec.load_word2vec_format(saved_model_path,
+                                                           binary=True,
+                                                           unicode_errors='replace')
     else:
         logger.error('Gnews model doesn\'t exist %s', saved_model_path)
         raise ValueError
