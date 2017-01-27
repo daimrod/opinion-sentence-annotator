@@ -301,6 +301,94 @@ inequalities).
     return model
 
 
+def build_custom_mce(train_path,
+                  word2vec_param=default_word2vec_param,
+                  lexicon=None, valid_num=0.1, top=10,
+                  clean_after=True):
+    """Build a Word2Vec model using MCE method.
+
+    Args:
+        lexicon: The lexicon used to build the inequalities.
+        valid_num: How much inequations should be used for cross-validation (either a floar between 0 and 1 or an integer.
+        top: See feat.build_ineq_for_model
+        clean_after: Clean the files after building the model if True."""
+    if lexicon is None:
+        raise ValueError('Empty lexicon')
+
+    source = TwitterLoggerTextReader(train_path)
+    source = GenericTextReader(source, lower=True)
+    source = Splitter(source)
+
+    input_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                             delete=False, prefix='input')
+    for line in source:
+        input_file.write(' '.join(line))
+        input_file.write('\n')
+    input_file.close()
+
+    output_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                              delete=False, prefix='output')
+    output_file.close()
+
+    syn_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                           delete=False, prefix='syn')
+    ant_file = tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8',
+                                           delete=False, prefix='ant')
+
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+    # Generate syn_file
+    for c in lexicon_inv:
+        syn_file.write('\t'.join(lexicon_inv[c]))
+        syn_file.write('\n')
+    syn_file.close()
+
+    # Generate ant_file
+    for cur_c in lexicon_inv:
+        for word in lexicon_inv[cur_c]:
+            for c in lexicon_inv:
+                # skip current observed class
+                if c == cur_c:
+                    continue
+                ant_file.write(word + '\t' + '\t'.join(lexicon_inv[c]))
+                ant_file.write('\n')
+    ant_file.close()
+
+    cmd = ['./word2vec',
+           '-train', input_file.name,
+           '-output', output_file.name,
+           '-size', str(word2vec_param['size']),
+           '-window', str(word2vec_param['window']),
+           '-sample', str(word2vec_param['sample']),
+           '-hs', str(word2vec_param['hs']),
+           '-iter', str(word2vec_param['iter']),
+           '-min-count', str(word2vec_param['min_count']),
+           '-read-syn', syn_file.name,
+           '-read-ant', ant_file.name,
+    ]
+    logger.info(' '.join(cmd))
+    p = Popen(cmd,
+              stdin=PIPE,
+              stdout=PIPE,
+              stderr=PIPE,
+              cwd=res.MCE_PATH)
+    out, err = p.communicate()
+    err = err.decode()
+    out = out.decode()
+    logger.info(out)
+    logger.error(err)
+    if p.returncode == 0:
+        model = gensim.models.Word2Vec.load_word2vec_format(output_file.name,
+                                                            binary=False,
+                                                            unicode_errors='replace')
+    if clean_after:
+        os.remove(output_file.name)
+        os.remove(input_file.name)
+        os.remove(syn_file.name)
+        os.remove(ant_file.name + '.train')
+    return model
+get_custom_mce = make_get_model(build_custom_mce, '.word2vec.custom_mce')
+
+
 def old_get_custom3():
     logger.info('Load custom3 model')
     saved_model_path = '/tmp/word2vec.custom3.txt'

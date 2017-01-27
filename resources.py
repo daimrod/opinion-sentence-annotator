@@ -65,6 +65,7 @@ test_path = rouvier_test
 
 SENNA_PATH = os.path.expanduser('~/src/thesis/senna/')
 SWE_PATH = os.path.expanduser('~/src/thesis/SWE/')
+MCE_PATH = os.path.expanduser('~/src/thesis/mce/')
 
 SEMEVAL_SCORER_PATH = os.path.join(semeval16, 'Task4/SemEval2016_task4_submissions_and_scores/')
 
