@@ -145,11 +145,12 @@ def make_get_model(build_function, name):
     def helper(train_path=res.twitter_logger_en_path,
                saved_model_path=res.twitter_logger_en_path + name,
                word2vec_param=default_word2vec_param,
-               force=False,
+               force=False, suffix='',
                **kwargs):
-        saved_model_path = '%s_size_%d_window_%d' % (saved_model_path,
+        saved_model_path = '%s_size_%d_window_%d_%s' % (saved_model_path,
                                                      word2vec_param['size'],
-                                                     word2vec_param['window'])
+                                                        word2vec_param['window'],
+                                                        suffix)
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
