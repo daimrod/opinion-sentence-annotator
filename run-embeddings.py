@@ -39,7 +39,7 @@ word2vec_param['workers'] = 6
 # emb.get_custom1(word2vec_param=word2vec_param, lexicon=nrc_emotion_lexicon,
 #                 force=True, suffix='nrc_emotion')
 
-# ???min
+# ~70min
 emb.get_custom_mce(word2vec_param=word2vec_param, lexicon=bing_liu_lexicon,
                    force=True, suffix='bing_liu')
 
