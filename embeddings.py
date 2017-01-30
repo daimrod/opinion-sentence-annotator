@@ -384,7 +384,7 @@ def build_custom_mce(train_path,
         os.remove(output_file.name)
         os.remove(input_file.name)
         os.remove(syn_file.name)
-        os.remove(ant_file.name + '.train')
+        os.remove(ant_file.name)
     return model
 get_custom_mce = make_get_model(build_custom_mce, '.word2vec.custom_mce')
 
