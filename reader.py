@@ -260,6 +260,63 @@ def read_mpqa_plus(mpqa_path_plus):
     return ret
 
 
+def read_lidilem(lidilem_path, pol_col):
+    """Return a dictionary of negative/positive words.
+
+    Format:
+nom;domaine(s);sous-domaine(s);niveau de langue;intensité;polarité;fig/loc;
+
+pol_col :
+adjectif = 7
+nom = 5
+verbes = 8
+
+    Args:
+        lidilem_path: Path to csv
+        pol_col: The col containing the polarity.
+
+     Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(lidilem_path, 'r', 'utf-8') as ifile:
+        first = True
+        for line in ifile:
+            if first:
+                # skip first line with headers
+                first = False
+                continue
+            line = line.strip()
+            col = line.split(';')
+            if col[pol_col] != '':
+                ret[col[0]] = col[pol_col]
+    return ret
+
+
+def read_blogoscopie(path):
+    """Return a dictionary of negative/positive words.
+
+    Args:
+        path: Path to file.
+
+     Returns:
+        A dictionary of positive and negative words.
+
+    Raises:
+        IOError: An error occurred.
+    """
+    ret = {}
+    with codecs.open(path, 'r', 'utf-8') as ifile:
+        for line in ifile:
+            line = line.strip()
+            data = line.split('\t')
+            ret[data[0]] = data[1]
+    return ret
+
+
 def read_nrc_hashtag_sentimenthashtags(path):
     """Return a dictionary of words with their scores.
 

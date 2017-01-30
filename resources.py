@@ -72,6 +72,8 @@ SEMEVAL_SCORER_PATH = os.path.join(semeval16, 'Task4/SemEval2016_task4_submissio
 TREC_EVAL_PATH = os.path.expanduser('~/src/thesis/trec_eval.9.0/')
 
 ## Lexicons
+
+### English lexicons
 bing_liu_lexicon_path = dict({'negative': os.path.join(DATA_DIR, 'bing-liu-lexicon/negative-words.txt'),
                               'positive': os.path.join(DATA_DIR, 'bing-liu-lexicon/positive-words.txt')})
 
@@ -87,6 +89,15 @@ nrc_hashtag_sentimenthashtags_path = os.path.join(DATA_DIR, 'NRC-Hashtag-Sentime
 nrc_sentiment140_unigram_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/unigrams-pmilexicon.txt')
 nrc_sentiment140_bigram_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/bigrams-pmilexicon.txt')
 nrc_sentiment140_pair_lexicon_path = os.path.join(DATA_DIR, 'Sentiment140-Lexicon-v0.1/pairs-pmilexicon.txt')
+
+### French lexicons
+lidilem_base_path = os.path.join(DATA_DIR, 'LIDILEM-Grenoble-lexiques')
+lidilem_adjectifs_lexicon_path = os.path.join(lidilem_base_path, 'Adjectifs.csv')
+lidilem_noms_lexicon_path = os.path.join(lidilem_base_path, 'Noms.csv')
+lidilem_verbes_lexicon_path = os.path.join(lidilem_base_path, 'Verbes.csv')
+blogoscopie_lexicon_path = os.path.join(DATA_DIR, 'blogoscopie/francais/LEXIQUE_EVALUATION_INITIAL_STRIPPED.txt')
+
+
 gnews_negative300_path = os.path.join(DATA_DIR, 'GoogleNews-vectors-negative300.bin.gz')
 
 carnegie_clusters_path = os.path.join(DATA_DIR, 'carnegie_clusters/50mpaths2')
