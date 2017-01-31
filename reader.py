@@ -296,6 +296,18 @@ verbes = 8
     return ret
 
 
+def read_lidilem_adjectifs(lidilem_path):
+    return read_lidilem(lidilem_path, 7)
+
+
+def read_lidilem_noms(lidilem_path):
+    return read_lidilem(lidilem_path, 5)
+
+
+def read_lidilem_verbes(lidilem_path):
+    return read_lidilem(lidilem_path, 8)
+
+
 def read_blogoscopie(path):
     """Return a dictionary of negative/positive words.
 
