@@ -107,3 +107,4 @@ sad_emoticons_path = os.path.join(DATA_DIR, 'sad_emoticons.txt')
 
 ## Tweets
 twitter_logger_en_path = os.path.join(DATA_DIR, 'tweets/en.json')
+twitter_logger_fr_path = os.path.join(DATA_DIR, 'tweets/fr.json')
