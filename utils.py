@@ -258,3 +258,12 @@ def split_lexicon_train_test(lexicon, ratio=0.9, shuffle=False):
             test_lexicon[w] = c
 
     return train_lexicon, test_lexicon
+
+
+def remove_multi_words_in_lexicon(lexicon):
+    """Remove multi-words in lexicon"""
+    ret = {}
+    for w in lexicon:
+        if len(w.split(' ')) == 1:
+            ret[w] = lexicon[w]
+    return ret

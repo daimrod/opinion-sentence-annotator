@@ -31,11 +31,14 @@ lidilem_adjectifs_lexicon = reader.read_lidilem_adjectifs(res.lidilem_adjectifs_
 lidilem_noms_lexicon = reader.read_lidilem_noms(res.lidilem_noms_lexicon_path)
 lidilem_verbes_lexicon = reader.read_lidilem_verbes(res.lidilem_verbes_lexicon_path)
 blogoscopie_lexicon = reader.read_blogoscopie(res.blogoscopie_lexicon_path)
+# anew_french = reader.read_anew(res.anew_french_lexicon_path)
 
 lexicons = [('lidilem_adjectifs', lidilem_adjectifs_lexicon),
             ('lidilem_noms', lidilem_noms_lexicon),
             ('lidilem_verbes', lidilem_verbes_lexicon),
             ('blogoscopie', blogoscopie_lexicon)]
+for lex_name in lexicons:
+    lexicons[lex_name] = utils.remove_multi_words_in_lexicon(lexicons[lex_name])
 
 model_name = 'model0'
 logger.info('Processing %s', model_name)
