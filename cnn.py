@@ -204,8 +204,8 @@ class SaveBestModel(Callback):
                             self.model.save(filepath, overwrite=True)
                     else:
                         if self.verbose > 0:
-                            logger.info('Epoch %05d: %s did not improve' %
-                                        (epoch, self.monitor))
+                            logger.info('Epoch %05d: %s did not improve from %0.5f to %0.5f' %
+                                        (epoch, self.monitor, self.best, current))
             else:
                 if self.verbose > 0:
                     logger.info('Epoch %05d: saving model to %s'
