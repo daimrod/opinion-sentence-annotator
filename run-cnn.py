@@ -6,6 +6,7 @@ import sys
 import os
 import inspect
 import argparse
+import ast
 
 
 def get_script_dir(follow_symlinks=True):
@@ -56,7 +57,7 @@ def main():
     for model in [CNNBase, CNNChengGuo]:
         spec = inspect.getargspec(model.__init__)
         for arg, val in zip(spec.args[1:], spec.defaults):
-            parser.add_argument('-' + arg, type=type(val), default=val,
+            parser.add_argument('-' + arg, type=ast.literal_eval, default=val,
                                 help='default: %(default)s')
     args = parser.parse_args()
     logger.info(args.message)
