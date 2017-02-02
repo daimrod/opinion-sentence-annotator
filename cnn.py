@@ -310,10 +310,19 @@ class CNNBase(FullPipeline):
         self.tokenizer = Tokenizer(nb_words=self.max_nb_words)
         self.tokenizer.fit_on_texts(self.texts)
         self.sequences = self.tokenizer.texts_to_sequences(self.texts)
+        self.train = None
 
         self.dev_texts = [d['tok'] for d in self.dev.data]
         self.dev_sequences = self.tokenizer.texts_to_sequences(self.dev_texts)
         self.dev_data = pad_sequences(self.dev_sequences, maxlen=self.max_sequence_length)
+        self.dev_labels = to_categorical(self.dev.target)
+        self.dev_texts = None
+
+        self.test_texts = [d['tok'] for d in self.test.data]
+        self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
+        self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
+        self.test_labels = to_categorical(self.test.target)
+        self.test_texts = None
 
         self.word_index = self.tokenizer.word_index
         logger.info('Found %s unique tokens.', len(self.word_index))
@@ -353,14 +362,15 @@ class CNNBase(FullPipeline):
                            metrics=[fmeasure])
 
     def run_train(self):
-        self.build_model()
         super().run_train()
         for j in range(self.nb_try):
+            self.build_pipeline()
+            self.build_model()
             for attempt in range(10):
                 try:
                     self.model.fit(self.train_data, [self.labels] * len(self.preds),
                                    validation_data=(self.dev_data,
-                                                    to_categorical(self.dev.target)),
+                                                    self.dev_labels),
                                    nb_epoch=self.nb_epoch,
                                    batch_size=self.batch_size,
                                    verbose=1,
@@ -369,20 +379,18 @@ class CNNBase(FullPipeline):
                                                             monitor='val_fmeasure',
                                                             mode='max')],
                                    shuffle=self.shuffle)
-                    if self.test_between_try:
-                        self.run_test()
-                        self.print_results()
                 except Exception as ex:
                     logger.error('Failed at attempt %d' % attempt, ex)
                     time.sleep(10)
                 else:
                     break
+            if self.test_between_try:
+                self.run_test()
+                self.print_results()
+
 
     def run_test(self):
         super().run_test()
-        self.test_texts = [d['tok'] for d in self.test.data]
-        self.test_sequences = self.tokenizer.texts_to_sequences(self.test_texts)
-        self.test_data = pad_sequences(self.test_sequences, maxlen=self.max_sequence_length)
         logger.info('Shape of data tensor: %s', self.test_data.shape)
 
         if len(self.preds) == 1:
