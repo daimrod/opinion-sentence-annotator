@@ -232,6 +232,9 @@ class CNNBase(FullPipeline):
                  max_nb_words=20000,
                  embedding_dim=100,
                  embedding_trainable=False,
+                 metrics='acc',
+                 monitor='acc',
+                 mode='max',
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
@@ -252,6 +255,12 @@ class CNNBase(FullPipeline):
         self.nb_try = nb_try
         self.test_between_try = test_between_try
         self.embedding_trainable = embedding_trainable
+        if metrics == 'fmeasure':
+            self.metrics = [fmeasure]
+        else:
+            self.metrics = [metrics]
+        self.monitor = monitor
+        self.mode = mode
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -359,7 +368,7 @@ class CNNBase(FullPipeline):
         print(self.model.summary())
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='rmsprop',
-                           metrics=[fmeasure])
+                           metrics=self.metrics)
 
     def run_train(self):
         super().run_train()
@@ -376,8 +385,8 @@ class CNNBase(FullPipeline):
                                    verbose=1,
                                    callbacks=[SaveBestModel(self,
                                                             'best_model',
-                                                            monitor='val_fmeasure',
-                                                            mode='max')],
+                                                            monitor=self.monitor,
+                                                            mode=self.mode)],
                                    shuffle=self.shuffle)
                 except Exception as ex:
                     logger.error('Failed at attempt %d' % attempt, ex)
@@ -540,7 +549,7 @@ class CNNRouvierBaseline(CNNBase):
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=adadelta,
-                           metrics=[fmeasure])
+                           metrics=self.metrics)
 CNNRegister['Rouvier_base'] = CNNRouvierBaseline
 
 
@@ -631,7 +640,7 @@ class CNNRouvier2016(CNNBase):
         adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-06)
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=adadelta,
-                           metrics=[fmeasure])
+                           metrics=self.metrics)
 CNNRegister['Rouvier2016'] = CNNRouvier2016
 
 
