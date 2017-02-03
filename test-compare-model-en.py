@@ -25,7 +25,8 @@ import utils
 
 topn = 1000
 sample_size = 5000
-train_path = res.twitter_logger_en_path
+# train_path = res.twitter_logger_en_path
+train_path = '/media/jadi-g/DATADRIVE1/corpus/tweets/en_short.json'
 
 bing_liu_lexicon = reader.read_bing_liu(res.bing_liu_lexicon_path)
 nrc_emotion_lexicon = reader.read_nrc_emotion(res.nrc_emotion_lexicon_path)
