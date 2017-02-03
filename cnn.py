@@ -303,6 +303,7 @@ class CNNBase(FullPipeline):
     def run_train(self):
         super().run_train()
         for j in range(self.nb_try):
+            logger.info('Try number %d', j)
             self.build_pipeline()
             self.build_model()
             for attempt in range(10):
