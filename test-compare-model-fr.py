@@ -30,12 +30,28 @@ train_path = res.twitter_logger_fr_path
 lidilem_adjectifs_lexicon = utils.remove_multi_words_in_lexicon(reader.read_lidilem_adjectifs(res.lidilem_adjectifs_lexicon_path))
 lidilem_noms_lexicon = utils.remove_multi_words_in_lexicon(reader.read_lidilem_noms(res.lidilem_noms_lexicon_path))
 lidilem_verbes_lexicon = utils.remove_multi_words_in_lexicon(reader.read_lidilem_verbes(res.lidilem_verbes_lexicon_path))
+lidilem_lexicon = {}
+# Merge lidilem lexicons
+for l in [lidilem_adjectifs_lexicon, lidilem_noms_lexicon, lidilem_verbes_lexicon]:
+    for w in l:
+        lidilem_lexicon[w] = l[w]
+
 blogoscopie_lexicon = utils.remove_multi_words_in_lexicon(reader.read_blogoscopie(res.blogoscopie_lexicon_path))
+# Merge similar classes
+for w in blogoscopie_lexicon:
+    if blogoscopie_lexicon[w] in ['favorable', 'acceptation', 'accord-approx', 'accord-total']:
+        blogoscopie_lexicon[w] = 'positif'
+    if blogoscopie_lexicon[w] in ['defavorable', 'desaccord', 'rectificatif']:
+        blogoscopie_lexicon[w] = 'negatif'
+
 # anew_french = reader.read_anew(res.anew_french_lexicon_path)
 
-lexicons = [('lidilem_adjectifs', lidilem_adjectifs_lexicon),
-            ('lidilem_noms', lidilem_noms_lexicon),
-            ('lidilem_verbes', lidilem_verbes_lexicon),
+# lexicons = [('lidilem_adjectifs', lidilem_adjectifs_lexicon),
+#             ('lidilem_noms', lidilem_noms_lexicon),
+#             ('lidilem_verbes', lidilem_verbes_lexicon),
+#             ('blogoscopie', blogoscopie_lexicon)]
+
+lexicons = [('lidilem', lidilem_lexicon),
             ('blogoscopie', blogoscopie_lexicon)]
 
 for (lex_name, lex) in lexicons:
