@@ -2,3 +2,4 @@
 /.dir-locals.el
 /log.txt
 /run_log.txt
+*.log
