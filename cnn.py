@@ -40,10 +40,10 @@ from keras.layers import Convolution1D
 from keras.layers import Dropout, merge
 from keras.models import Model
 from keras.models import K
+from keras.models import load_model
 from keras.optimizers import Adadelta
 from keras.optimizers import SGD
 
-from keras.callbacks import BaseLogger
 from keras.callbacks import Callback
 
 import numpy as np
@@ -51,78 +51,14 @@ import numpy as np
 CNNRegister = {}
 
 
-class TestEpoch(BaseLogger):
-    def __init__(self, pipeline):
-        self.pipeline = pipeline
-
-    def on_epoch_end(self, epoch, logs={}):
-        super().on_epoch_end(epoch, logs)
-        logger.info('epoch: %d', epoch)
-        self.pipeline.run_test()
-        self.pipeline.print_results()
-
-
-def precision(y_true, y_pred):
-    '''Calculates the precision, a metric for multi-label classification of
-    how many selected items are relevant.
-    '''
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
-
-
-def recall(y_true, y_pred):
-    '''Calculates the recall, a metric for multi-label classification of
-    how many relevant items are selected.
-    '''
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
-
-
-def fbeta_score(y_true, y_pred, beta=1):
-    '''Calculates the F score, the weighted harmonic mean of precision and recall.
-    This is useful for multi-label classification, where input samples can be
-    classified as sets of labels. By only using accuracy (precision) a model
-    would achieve a perfect score by simply assigning every class to every
-    input. In order to avoid this, a metric should penalize incorrect class
-    assignments as well (recall). The F-beta score (ranged from 0.0 to 1.0)
-    computes this, as a weighted mean of the proportion of correct class
-    assignments vs. the proportion of incorrect class assignments.
-    With beta = 1, this is equivalent to a F-measure. With beta < 1, assigning
-    correct classes becomes more important, and with beta > 1 the metric is
-    instead weighted towards penalizing incorrect class assignments.
-    '''
-    if beta < 0:
-        raise ValueError('The lowest choosable beta is zero (only precision).')
-
-    # If there are no true positives, fix the F score at 0 like sklearn.
-    if K.sum(K.round(K.clip(y_true, 0, 1))) == 0:
-        return 0
-
-    p = precision(y_true, y_pred)
-    r = recall(y_true, y_pred)
-    bb = beta ** 2
-    fbeta_score = (1 + bb) * (p * r) / (bb * p + r + K.epsilon())
-    return fbeta_score
-
-
-def fmeasure(y_true, y_pred):
-    '''Calculates the f-measure, the harmonic mean of precision and recall.
-    '''
-    return fbeta_score(y_true, y_pred, beta=1)
-
-
-class SaveBestModel(Callback):
-    '''Save the model after every epoch.
+class ModelCheckpoint(Callback):
+    """Save the model after every epoch.
     `filepath` can contain named formatting options,
     which will be filled the value of `epoch` and
     keys in `logs` (passed in `on_epoch_end`).
     For example: if `filepath` is `weights.{epoch:02d}-{val_loss:.2f}.hdf5`,
-    then multiple files will be save with the epoch number and
-    the validation loss.
+    then the model checkpoints will be saved with the epoch number and
+    the validation loss in the filename.
     # Arguments
         filepath: string, path to save the model file.
         monitor: quantity to monitor.
@@ -142,9 +78,11 @@ class SaveBestModel(Callback):
             saved (`model.save_weights(filepath)`), else the full model
             is saved (`model.save(filepath)`).
         period: Interval (number of epochs) between checkpoints.
-    '''
-    def __init__(self, cnn_base, filepath, monitor='val_loss', verbose=1,
-                 save_best_only=True, save_weights_only=False,
+    """
+
+    def __init__(self, filepath, monitor='val_loss', verbose=0,
+                 save_best_only=False, save_weights_only=False,
+                 previous_best=None,
                  mode='auto', period=1):
         super().__init__()
         self.monitor = monitor
@@ -154,12 +92,11 @@ class SaveBestModel(Callback):
         self.save_weights_only = save_weights_only
         self.period = period
         self.epochs_since_last_save = 0
-        self.cnn_base = cnn_base
 
         if mode not in ['auto', 'min', 'max']:
-            logger.warn('ModelCheckpoint mode %s is unknown, '
-                        'fallback to auto mode.' % (mode),
-                        RuntimeWarning)
+            warnings.warn('ModelCheckpoint mode %s is unknown, '
+                          'fallback to auto mode.' % (mode),
+                          RuntimeWarning)
             mode = 'auto'
 
         if mode == 'min':
@@ -169,16 +106,17 @@ class SaveBestModel(Callback):
             self.monitor_op = np.greater
             self.best = -np.Inf
         else:
-            if self.monitor.startswith(('acc', 'fmeasure')):
+            if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
                 self.monitor_op = np.greater
                 self.best = -np.Inf
             else:
                 self.monitor_op = np.less
                 self.best = np.Inf
-        if self.cnn_base.best_score is not None:
-            self.best = self.cnn_base.best_score
+        if previous_best is not None:
+            self.best = previous_best
 
-    def on_epoch_end(self, epoch, logs={}):
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
         self.epochs_since_last_save += 1
         if self.epochs_since_last_save >= self.period:
             self.epochs_since_last_save = 0
@@ -186,37 +124,31 @@ class SaveBestModel(Callback):
             if self.save_best_only:
                 current = logs.get(self.monitor)
                 if current is None:
-                    logger.warn('Can save best model only with %s available, '
-                                'skipping.' % (self.monitor), RuntimeWarning)
+                    warnings.warn('Can save best model only with %s available, '
+                                  'skipping.' % (self.monitor), RuntimeWarning)
                 else:
                     if self.monitor_op(current, self.best):
                         if self.verbose > 0:
-                            logger.info('Epoch %05d: %s improved from %0.5f to %0.5f,'
-                                        ' saving model to %s'
-                                        % (epoch, self.monitor, self.best,
-                                           current, filepath))
+                            print('Epoch %05d: %s improved from %0.5f to %0.5f,'
+                                  ' saving model to %s'
+                                  % (epoch, self.monitor, self.best,
+                                     current, filepath))
                         self.best = current
-                        self.cnn_base.best_model = self.model
-                        self.cnn_base.best_score = self.best
                         if self.save_weights_only:
                             self.model.save_weights(filepath, overwrite=True)
                         else:
                             self.model.save(filepath, overwrite=True)
                     else:
                         if self.verbose > 0:
-                            logger.info('Epoch %05d: %s did not improve from %0.5f to %0.5f' %
-                                        (epoch, self.monitor, self.best, current))
+                            print('Epoch %05d: %s did not improve' %
+                                  (epoch, self.monitor))
             else:
                 if self.verbose > 0:
-                    logger.info('Epoch %05d: saving model to %s'
-                                % (epoch, filepath))
-                self.cnn_base.best_model = self.model
-                self.cnn_base.best_score = self.best
+                    print('Epoch %05d: saving model to %s' % (epoch, filepath))
                 if self.save_weights_only:
                     self.model.save_weights(filepath, overwrite=True)
                 else:
                     self.model.save(filepath, overwrite=True)
-
 
 class CNNBase(FullPipeline):
     def __init__(self,
@@ -233,8 +165,9 @@ class CNNBase(FullPipeline):
                  embedding_dim=100,
                  embedding_trainable=False,
                  metrics='acc',
-                 monitor='acc',
-                 mode='max',
+                 monitor='val_acc',
+                 mode='auto',
+                 best_model_path='best_model',
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
@@ -250,17 +183,14 @@ class CNNBase(FullPipeline):
         self.embedding_dim = embedding_dim
         self.shuffle = shuffle
         self.embedding = None
-        self.best_model = None
-        self.best_score = None
         self.nb_try = nb_try
         self.test_between_try = test_between_try
         self.embedding_trainable = embedding_trainable
-        if metrics == 'fmeasure':
-            self.metrics = [fmeasure]
-        else:
-            self.metrics = [metrics]
+        self.metrics = [metrics]
         self.monitor = monitor
         self.mode = mode
+        self.best_model_path = best_model_path
+        self.best_score = None
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -376,18 +306,22 @@ class CNNBase(FullPipeline):
             self.build_pipeline()
             self.build_model()
             for attempt in range(10):
+                model_checkpoint = ModelCheckpoint(filepath=self.best_model_path,
+                                                   monitor=self.monitor,
+                                                   verbose=1,
+                                                   save_best_only=True,
+                                                   previous_best=self.best_score,
+                                                   mode=self.mode)
                 try:
-                    self.model.fit(self.train_data, [self.labels] * len(self.preds),
-                                   validation_data=(self.dev_data,
-                                                    self.dev_labels),
-                                   nb_epoch=self.nb_epoch,
-                                   batch_size=self.batch_size,
-                                   verbose=1,
-                                   callbacks=[SaveBestModel(self,
-                                                            'best_model',
-                                                            monitor=self.monitor,
-                                                            mode=self.mode)],
-                                   shuffle=self.shuffle)
+                    self.hist = self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                                                  validation_data=(self.dev_data,
+                                                                   self.dev_labels),
+                                                  nb_epoch=self.nb_epoch,
+                                                  batch_size=self.batch_size,
+                                                  verbose=1,
+                                                  callbacks=[model_checkpoint],
+                                                  shuffle=self.shuffle)
+                    self.best_score = model_checkpoint.best
                 except Exception as ex:
                     logger.error('Failed at attempt %d' % attempt, ex)
                     time.sleep(10)
@@ -396,21 +330,24 @@ class CNNBase(FullPipeline):
             if self.test_between_try:
                 self.run_test()
                 self.print_results()
+        self.load_best_model()
 
+    def load_best_model(self):
+        self.model = load_model(self.best_model_path)
 
     def run_test(self):
         super().run_test()
         logger.info('Shape of data tensor: %s', self.test_data.shape)
 
         if len(self.preds) == 1:
-            t_predicted = self.best_model.predict(self.test_data, verbose=1)
+            t_predicted = self.model.predict(self.test_data, verbose=1)
             if t_predicted.shape[-1] > 1:
                 self.predicted = t_predicted.argmax(axis=-1)
             else:
                 self.predicted = (t_predicted > 0.5).astype('int32')
         else:
             self.predicted = [None] * len(self.preds)
-            for (i, t_predicted) in enumerate(self.best_model.predict(self.test_data, verbose=1)):
+            for (i, t_predicted) in enumerate(self.model.predict(self.test_data, verbose=1)):
                 if t_predicted.shape[-1] > 1:
                     self.predicted[i] = t_predicted.argmax(axis=-1)
                 else:
