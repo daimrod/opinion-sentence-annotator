@@ -342,7 +342,7 @@ class CNNBase(FullPipeline):
             # Test if the current (try) best model is the best of all time
             if self.best_score is None or model_checkpoint.monitor_op(model_checkpoint.best, self.best_score):
                 logger.info('Try %05d: %s improved from %0.5f to %0.5f',
-                            j, self.best_score, model_checkpoint.best)
+                            j, self.monitor, self.best_score, model_checkpoint.best)
                 self.best_score = model_checkpoint.best
                 self.best_model_path = best_model_path
 
