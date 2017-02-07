@@ -40,7 +40,6 @@ from keras.layers import Convolution1D
 from keras.layers import Dropout, merge
 from keras.models import Model
 from keras.models import K
-from keras.models import load_model
 from keras.optimizers import Adadelta
 from keras.optimizers import SGD
 
@@ -312,6 +311,7 @@ class CNNBase(FullPipeline):
                                                monitor=self.monitor,
                                                verbose=1,
                                                save_best_only=True,
+                                               save_weights_only=True,
                                                mode=self.mode)
             for attempt in range(10):
                 try:
@@ -347,10 +347,10 @@ class CNNBase(FullPipeline):
         self.load_best_model()
 
     def load_best_model(self):
+        del self.model
         self.build_pipeline()
         self.build_model()
-        del self.model
-        self.model = load_model(self.best_model_path)
+        self.model.load_weights(self.best_model_path)
 
     def run_test(self):
         super().run_test()
