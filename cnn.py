@@ -13,6 +13,8 @@ from reader import Dataset  # We need this import because we're loading
                             # a Dataset with pickle
 from reader import read_bing_liu
 from utils import eval_with_semeval_script
+import lexicons
+
 from sklearn import metrics
 import resources as res
 import pickle
@@ -426,22 +428,24 @@ CNNRegister['CG_custom0'] = CNNChengGuo_Custom0
 
 
 class CNNChengGuo_Custom1(CNNChengGuo):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
-        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon,
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
+        self.embedding = emb.get_custom1(lexicon=self.lexicon,
                                          suffix='bing_liu')
 CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
 
 class CNNChengGuo_Custom3(CNNChengGuo):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.bing_liu_lexicon,
-                                           suffix='bing_liu')
+                                           lexicon=self.lexicon,
+                                           suffix=self.lexicon_name)
 CNNRegister['CG_custom3'] = CNNChengGuo_Custom3
 
 
@@ -502,22 +506,24 @@ CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline_custom0
 
 
 class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
-        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon,
-                                         suffix='bing_liu')
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
+        self.embedding = emb.get_custom1(lexicon=self.lexicon,
+                                         suffix=self.lexicon_name)
 CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
 
 
 class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.bing_liu_lexicon,
-                                           suffix='bing_liu')
+                                           lexicon=self.lexicon,
+                                           suffix=self.lexicon_name)
 CNNRegister['Rouvier_base_custom3'] = CNNRouvierBaseline_custom3
 
 
@@ -593,42 +599,46 @@ CNNRegister['Rouvier2016_custom0'] = CNNRouvier2016_custom0
 
 
 class CNNRouvier2016_custom1(CNNRouvier2016):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
-        self.embedding = emb.get_custom1(lexicon=self.bing_liu_lexicon,
-                                         suffix='bing_liu')
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
+        self.embedding = emb.get_custom1(lexicon=self.lexicon,
+                                         suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
 
 
 class CNNRouvier2016_custom_mce(CNNRouvier2016):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
-        self.embedding = emb.get_custom_mce(lexicon=self.bing_liu_lexicon,
-                                            suffix='bing_liu')
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
+        self.embedding = emb.get_custom_mce(lexicon=self.lexicon,
+                                            suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom_mce'] = CNNRouvier2016_custom_mce
 
 
 class CNNRouvier2016_custom3(CNNRouvier2016):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.bing_liu_lexicon,
-                                           suffix='bing_liu')
+                                           lexicon=self.lexicon,
+                                           suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
 
 
 class CNNRouvier2016_custom3_1(CNNRouvier2016):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lexicon_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
+        self.lexicon_name = lexicon_name
+        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3_1(model0,
-                                             lexicon=self.bing_liu_lexicon,
-                                             suffix='bing_liu')
+                                             lexicon=self.lexicon,
+                                             suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom3_1'] = CNNRouvier2016_custom3_1
 
 
