@@ -313,6 +313,8 @@ class CNNBase(FullPipeline):
                                                save_best_only=True,
                                                save_weights_only=True,
                                                mode=self.mode)
+            if self.best_score is None:
+                self.best_score = model_checkpoint.best
             for attempt in range(10):
                 try:
                     self.hist = self.model.fit(self.train_data, [self.labels] * len(self.preds),
