@@ -579,10 +579,10 @@ class CNNRouvier2016(CNNBase):
         dropout_hd1 = Dropout(self.dropout)(x)
 
         x = Dense(512, activation='relu')(dropout_hd1)
-        dropout_hd2 = Dropout(self.dropout)(x)
+        # dropout_hd2 = Dropout(self.dropout)(x)
 
         output1 = Dense(3, activation='softmax')(x)
-        output2 = Dense(3, activation='softmax')(dropout_hd2)
+        # output2 = Dense(3, activation='softmax')(dropout_hd2)
 
         self.preds = [output1]
 
