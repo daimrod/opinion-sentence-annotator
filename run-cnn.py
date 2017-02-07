@@ -70,7 +70,7 @@ def main():
         model = CNNRegister[args.model]
         model(**args.__dict__).run()
     except Exception as ex:
-        logger.error(ex)
+        logger.exception(ex)
 
 if __name__ == '__main__':
     main()
