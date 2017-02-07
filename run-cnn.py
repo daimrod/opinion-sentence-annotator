@@ -57,8 +57,12 @@ def main():
     for model in [CNNBase, CNNChengGuo]:
         spec = inspect.getargspec(model.__init__)
         for arg, val in zip(spec.args[1:], spec.defaults):
-            parser.add_argument('-' + arg, type=ast.literal_eval, default=val,
-                                help='default: %(default)s')
+            if type(val) == str:
+                parser.add_argument('-' + arg, type=str, default=val,
+                                    help='default: %(default)s')
+            else:
+                parser.add_argument('-' + arg, type=ast.literal_eval, default=val,
+                                    help='default: %(default)s')
     args = parser.parse_args()
     logger.info(args.message)
     logger.info(args)
