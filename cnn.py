@@ -189,7 +189,8 @@ class CNNBase(FullPipeline):
         self.metrics = [metrics]
         self.monitor = monitor
         self.mode = mode
-        self.best_model_path = best_model_path
+        self.best_model_path_format = best_model_path
+        self.best_model_path = None
         self.best_score = None
 
     def load_fixed_embedding(self):
@@ -306,13 +307,13 @@ class CNNBase(FullPipeline):
             logger.info('Try number %d', j)
             self.build_pipeline()
             self.build_model()
+            best_model_path = self.best_model_path_format + '_' + str(j)
+            model_checkpoint = ModelCheckpoint(filepath=best_model_path,
+                                               monitor=self.monitor,
+                                               verbose=1,
+                                               save_best_only=True,
+                                               mode=self.mode)
             for attempt in range(10):
-                model_checkpoint = ModelCheckpoint(filepath=self.best_model_path,
-                                                   monitor=self.monitor,
-                                                   verbose=1,
-                                                   save_best_only=True,
-                                                   previous_best=self.best_score,
-                                                   mode=self.mode)
                 try:
                     self.hist = self.model.fit(self.train_data, [self.labels] * len(self.preds),
                                                   validation_data=(self.dev_data,
@@ -322,15 +323,27 @@ class CNNBase(FullPipeline):
                                                   verbose=1,
                                                   callbacks=[model_checkpoint],
                                                   shuffle=self.shuffle)
-                    self.best_score = model_checkpoint.best
                 except Exception as ex:
                     logger.error('Failed at attempt %d' % attempt, ex)
                     time.sleep(10)
                 else:
                     break
             if self.test_between_try:
+                # Try with the current best model on test
+                tmp = self.best_model_path
+                self.best_model_path = best_model_path
+                self.load_best_model()
                 self.run_test()
                 self.print_results()
+                self.best_model_path = tmp
+
+            # Test if the current (try) best model is the best of all time
+            if self.best_score is None or model_checkpoint.monitor_op(model_checkpoint.best, self.best_score):
+                logger.info('Try %05d: %s improved from %0.5f to %0.5f',
+                            j, self.best_score, model_checkpoint.best)
+                self.best_score = model_checkpoint.best
+                self.best_model_path = best_model_path
+
         self.load_best_model()
 
     def load_best_model(self):
