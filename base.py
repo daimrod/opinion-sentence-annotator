@@ -17,22 +17,7 @@ from utils import strings_to_integers
 
 import features as feat
 
-if 'logger' not in locals() and logging.getLogger('__run__') is not None:
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s %(filename)s:%(lineno)s - %(funcName)20s() %(levelname)-8s %(message)s')
-    # StreamHandler
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(formatter)
-
-    # FileHandler
-    fh = logging.FileHandler('log.txt', 'a')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-
-    logger.handlers = [sh, fh]
+logger = logging.getLogger(__name__)
 
 
 ########## Pipeline

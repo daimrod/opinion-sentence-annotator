@@ -11,22 +11,7 @@ from keras.layers import Dense, Input
 from keras.preprocessing.text import Tokenizer
 from keras.models import Model
 
-if 'logger' not in locals():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s %(filename)s:%(lineno)s - %(funcName)20s() %(levelname)-8s %(message)s')
-    # StreamHandler
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(formatter)
-
-    # FileHandler
-    fh = logging.FileHandler('log.txt', 'a')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-
-    logger.handlers = [sh, fh]
+logger = logging.getLogger(__name__)
 
 from svm import NRCCanada
 from reader import Dataset  # We need this import because we're loading

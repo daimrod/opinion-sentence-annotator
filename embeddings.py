@@ -33,6 +33,8 @@ import features as feat
 import resources as res
 import utils
 
+logger = logging.getLogger(__name__)
+
 default_word2vec_param = {
     # sg defines the training algorithm. By default (sg=0), CBOW is
     # used. Otherwise (sg=1), skip-gram is employed.
@@ -122,23 +124,6 @@ default_word2vec_param = {
     # to that maximum.)
     'batch_words': 10000,
 }
-
-if 'logger' not in locals() and logging.getLogger('__run__') is not None:
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s %(filename)s:%(lineno)s - %(funcName)20s() %(levelname)-8s %(message)s')
-    # StreamHandler
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(formatter)
-
-    # FileHandler
-    fh = logging.FileHandler('log.txt', 'a')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-
-    logger.handlers = [sh, fh]
 
 
 def make_get_model(build_function, name):
