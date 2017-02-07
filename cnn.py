@@ -349,6 +349,7 @@ class CNNBase(FullPipeline):
     def load_best_model(self):
         self.build_pipeline()
         self.build_model()
+        del self.model
         self.model = load_model(self.best_model_path)
 
     def run_test(self):
