@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import logger_config
 
 logger = logging.getLogger(__name__)
 

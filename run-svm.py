@@ -19,7 +19,6 @@ def get_script_dir(follow_symlinks=True):
 sys.path.append(get_script_dir())
 
 import logging
-import logger_config
 
 logger = logging.getLogger('__run__')
 
