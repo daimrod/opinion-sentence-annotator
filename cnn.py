@@ -165,8 +165,8 @@ class CNNBase(FullPipeline):
                  max_nb_words=20000,
                  embedding_dim=100,
                  embedding_trainable=False,
-                 metrics=['acc'],
-                 monitor='val_acc',
+                 metrics=['acc', fmeasure],
+                 monitor='val_fmeasure',
                  mode='auto',
                  best_model_path='best_model',
                  *args, **kwargs):
