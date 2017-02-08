@@ -92,7 +92,7 @@ class ModelCheckpoint(Callback):
             self.monitor_op = np.greater
             self.best = -np.Inf
         else:
-            if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
+            if 'acc' in self.monitor or 'fmeasure' in self.monitor:
                 self.monitor_op = np.greater
                 self.best = -np.Inf
             else:
@@ -150,7 +150,7 @@ class CNNBase(FullPipeline):
                  max_nb_words=20000,
                  embedding_dim=100,
                  embedding_trainable=False,
-                 metrics='acc',
+                 metrics=['acc'],
                  monitor='val_acc',
                  mode='auto',
                  best_model_path='best_model',
@@ -172,7 +172,7 @@ class CNNBase(FullPipeline):
         self.nb_try = nb_try
         self.test_between_try = test_between_try
         self.embedding_trainable = embedding_trainable
-        self.metrics = [metrics]
+        self.metrics = metrics
         self.monitor = monitor
         self.mode = mode
         self.best_model_path_format = best_model_path
