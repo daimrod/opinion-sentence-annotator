@@ -142,6 +142,7 @@ class CNNBase(FullPipeline):
                  only_uid=None,
                  train_only_labels=['positive', 'negative', 'neutral'],
                  test_only_labels=['positive', 'negative', 'neutral'],
+                 dev_only_labels=['positive', 'negative', 'neutral'],
                  repreprocess=False,
                  nb_epoch=2, batch_size=128,
                  nb_try=1, test_between_try=True,
@@ -161,6 +162,7 @@ class CNNBase(FullPipeline):
         self.only_uid = only_uid
         self.train_only_labels = train_only_labels
         self.test_only_labels = test_only_labels
+        self.dev_only_labels = dev_only_labels
         self.repreprocess = repreprocess
         self.nb_epoch = nb_epoch
         self.batch_size = batch_size
@@ -223,7 +225,7 @@ class CNNBase(FullPipeline):
         self.test.truncate(self.test_truncate)
         self.train.filter_label(self.train_only_labels)
         self.test.filter_label(self.test_only_labels)
-        self.dev.filter_label(self.test_only_labels)
+        self.dev.filter_label(self.dev_only_labels)
         if self.only_uid is not None:
             self.test.filter_uid(self.only_uid)
 
