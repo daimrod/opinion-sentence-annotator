@@ -29,12 +29,25 @@ from keras.models import Model
 from keras.models import K
 from keras.optimizers import Adadelta
 from keras.optimizers import SGD
+from keras.metrics import fbeta_score
+from keras.metrics import precision
+from keras.metrics import recall
 
 from keras.callbacks import Callback
 
 import numpy as np
 
 CNNRegister = {}
+
+
+def fmeasure(y_true, y_pred):
+    """Computes the f-measure, the harmonic mean of precision and recall."""
+    to_keep = y_pred[2] == 0
+    y_pred = y_pred[to_keep]
+    y_true = y_true[to_keep]
+    pre = precision(y_true, y_pred)
+    rec = recall(y_true, y_pred)
+    return (2 * pre * rec) / 2
 
 
 class ModelCheckpoint(Callback):
