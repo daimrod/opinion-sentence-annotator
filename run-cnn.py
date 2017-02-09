@@ -39,9 +39,17 @@ def main():
                         help='A message to log at the start.')
     parser.add_argument('--model', type=str, default='CNNBase', choices=CNNRegister,
                         help='The name of the model to use.')
-    for model in [CNNBase, CNNChengGuo]:
+    known_args = []
+    for model_name in CNNRegister:
+        model = CNNRegister[model_name]
         spec = inspect.getargspec(model.__init__)
+        if spec.defaults is None:
+            continue
         for arg, val in zip(spec.args[1:], spec.defaults):
+            if arg in known_args:
+                continue
+            else:
+                known_args.append(arg)
             if type(val) == str:
                 parser.add_argument('-' + arg, type=str, default=val,
                                     help='default: %(default)s')
