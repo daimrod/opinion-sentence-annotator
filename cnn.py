@@ -169,6 +169,7 @@ class CNNBase(FullPipeline):
                  monitor='val_fmeasure',
                  mode='auto',
                  best_model_path='best_model',
+                 save_best_only=True,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_truncate = train_truncate
@@ -194,6 +195,7 @@ class CNNBase(FullPipeline):
         self.best_model_path_format = best_model_path
         self.best_model_path = None
         self.best_score = None
+        self.save_best_only = save_best_only
 
     def load_fixed_embedding(self):
         logger.info('Preparing embedding matrix.')
@@ -313,7 +315,7 @@ class CNNBase(FullPipeline):
             model_checkpoint = ModelCheckpoint(filepath=best_model_path,
                                                monitor=self.monitor,
                                                verbose=1,
-                                               save_best_only=True,
+                                               save_best_only=self.save_best_only,
                                                save_weights_only=True,
                                                mode=self.mode)
             if self.best_score is None:
