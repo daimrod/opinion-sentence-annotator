@@ -444,7 +444,7 @@ CNNRegister['CG_custom0'] = CNNChengGuo_Custom0
 
 
 class CNNChengGuo_Custom1(CNNChengGuo):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -454,7 +454,7 @@ CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
 
 class CNNChengGuo_Custom3(CNNChengGuo):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -522,7 +522,7 @@ CNNRegister['Rouvier_base_custom0'] = CNNRouvierBaseline_custom0
 
 
 class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -532,7 +532,7 @@ CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
 
 
 class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -615,7 +615,7 @@ CNNRegister['Rouvier2016_custom0'] = CNNRouvier2016_custom0
 
 
 class CNNRouvier2016_custom1(CNNRouvier2016):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -625,7 +625,7 @@ CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
 
 
 class CNNRouvier2016_custom_mce(CNNRouvier2016):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -635,7 +635,7 @@ CNNRegister['Rouvier2016_custom_mce'] = CNNRouvier2016_custom_mce
 
 
 class CNNRouvier2016_custom3(CNNRouvier2016):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
@@ -647,7 +647,7 @@ CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
 
 
 class CNNRouvier2016_custom3_1(CNNRouvier2016):
-    def __init__(self, lexicon_name, *args, **kwargs):
+    def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
