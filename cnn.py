@@ -462,8 +462,7 @@ class CNNChengGuo_Custom3(CNNChengGuo):
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.lexicon,
-                                           suffix=self.lexicon_name)
+                                           lexicon=self.lexicon)
 CNNRegister['CG_custom3'] = CNNChengGuo_Custom3
 
 
@@ -540,8 +539,7 @@ class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.lexicon,
-                                           suffix=self.lexicon_name)
+                                           lexicon=self.lexicon)
 CNNRegister['Rouvier_base_custom3'] = CNNRouvierBaseline_custom3
 
 
@@ -643,8 +641,7 @@ class CNNRouvier2016_custom3(CNNRouvier2016):
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3(model0,
-                                           lexicon=self.lexicon,
-                                           suffix=self.lexicon_name)
+                                           lexicon=self.lexicon)
 CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
 
 
@@ -655,8 +652,7 @@ class CNNRouvier2016_custom3_1(CNNRouvier2016):
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3_1(model0,
-                                             lexicon=self.lexicon,
-                                             suffix=self.lexicon_name)
+                                             lexicon=self.lexicon)
 CNNRegister['Rouvier2016_custom3_1'] = CNNRouvier2016_custom3_1
 
 
