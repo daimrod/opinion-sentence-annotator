@@ -29,6 +29,8 @@ from reader import LexiconProjecter
 from reader import GenericTextReader
 from reader import w_norm
 
+import lexicons
+
 import features as feat
 import resources as res
 import utils
@@ -417,7 +419,7 @@ def build_custom3(initial_model,
         for word in lexicon:
             if word not in model:
                 continue
-            i = model.vocab[word].index
+            i = model.wv.vocab[word].index
             word_neighbours = [w for w in lexicon_inv[lexicon[word]]
                                if w != word]
             num_neighbours = len(word_neighbours)
@@ -429,16 +431,16 @@ def build_custom3(initial_model,
             if num_neighbours == 0:
                 continue
             # the weight of the data estimate if the number of neighbours
-            model.syn0[i] = num_neighbours * a_i * initial_model.syn0[i]
+            model.wv.syn0[i] = num_neighbours * a_i * initial_model.wv.syn0[i]
             # loop over neighbours and add to new vector
             # for pp_word in word_neighbours:
-            #     j = model.vocab[pp_word].index
-            #     model.syn0[i] += b_ij * model.syn0[j]
+            #     j = model.wv.vocab[pp_word].index
+            #     model.wv.syn0[i] += b_ij * model.wv.syn0[j]
 
             # Vectorized version of the above
-            word_neighbours = [model.vocab[w].index for w in word_neighbours]
-            model.syn0[i] = model.syn0[i] + b_ij * np.sum(model.syn0[word_neighbours], axis=0)
-            model.syn0[i] = model.syn0[i] / (num_neighbours * (b_ij + a_i))
+            word_neighbours = [model.wv.vocab[w].index for w in word_neighbours]
+            model.wv.syn0[i] = model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_neighbours], axis=0)
+            model.wv.syn0[i] = model.wv.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
 
 
@@ -473,7 +475,7 @@ Put same class closer and other classes away.
         for word in lexicon:
             if word not in model:
                 continue
-            i = model.vocab[word].index
+            i = model.wv.vocab[word].index
             word_neighbours = [w for w in lexicon_inv[lexicon[word]]
                                if w != word]
 
@@ -499,19 +501,102 @@ Put same class closer and other classes away.
             if num_neighbours == 0 and num_not_neighbours == 0:
                 continue
             # the weight of the data estimate if the number of neighbours
-            model.syn0[i] = num_neighbours * a_i * initial_model.syn0[i]
+            model.wv.syn0[i] = num_neighbours * a_i * initial_model.wv.syn0[i]
             # loop over neighbours and add to new vector
             # for pp_word in word_neighbours:
-            #     j = model.vocab[pp_word].index
-            #     model.syn0[i] += b_ij * model.syn0[j]
+            #     j = model.wv.vocab[pp_word].index
+            #     model.wv.syn0[i] += b_ij * model.wv.syn0[j]
 
             # Vectorized version of the above
-            word_neighbours = [model.vocab[w].index for w in word_neighbours]
-            model.syn0[i] = model.syn0[i] + b_ij * np.sum(model.syn0[word_neighbours], axis=0)
-            word_not_neighbours = [model.vocab[w].index for w in word_not_neighbours]
-            model.syn0[i] = model.syn0[i] - c_ij * np.sum(model.syn0[word_not_neighbours], axis=0)
-            model.syn0[i] = model.syn0[i] / (num_neighbours * (b_ij + a_i))
+            word_neighbours = [model.wv.vocab[w].index for w in word_neighbours]
+            model.wv.syn0[i] = model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_neighbours], axis=0)
+            word_not_neighbours = [model.wv.vocab[w].index for w in word_not_neighbours]
+            model.wv.syn0[i] = model.wv.syn0[i] - c_ij * np.sum(model.wv.syn0[word_not_neighbours], axis=0)
+            model.wv.syn0[i] = model.wv.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
+
+def build_custom3_2(initial_model,
+                    lexicon_name,
+                    a_i=1, b_ij=1, c_ij=1,
+                    n_iter=10, in_place=True,
+                    d=1, topn=50):
+    """Derived from faruqui:2014:NIPS-DLRLW method.
+Put same class closer and other classes away.
+
+Also moves the topn neighboors by d x <the actual translation>
+
+    Args:
+        in_place: Modify the given model instead of copying it if True."""
+    logger.info('Customize 3_2 with %s', lexicon_name)
+    if not in_place:
+        initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
+                                                         encoding='utf-8',
+                                                         delete=False)
+        initial_model_file.close()
+        initial_model.save(initial_model_file.name)
+        model = gensim.models.Word2Vec.load(initial_model_file.name)
+        os.remove(initial_model_file.name)
+    else:
+        model = initial_model
+    lexicon = {}
+    for (w, v) in lexicons.get_lexicon(lexicon_name).items():
+        if w in model:
+            lexicon[w] = v
+    lexicon_inv = utils.invert_dict_nonunique(lexicon)
+
+    for it in range(n_iter):
+        # loop through every node also in ontology (else just use data
+        # estimate)
+        for word in lexicon:
+            if word not in model:
+                continue
+            i = model.wv.vocab[word].index
+            word_lex_neighbours = [w for w in lexicon_inv[lexicon[word]]
+                               if w != word]
+
+            # Non-lex_neighbours are words with different classes than WORD
+            word_not_lex_neighbours = []
+            for c in lexicon_inv:
+                if c != lexicon[word]:
+                    word_not_lex_neighbours.extend(lexicon_inv[c])
+            # Remove duplicate
+            word_not_lex_neighbours = list(set(word_not_lex_neighbours))
+
+            num_lex_neighbours = len(word_lex_neighbours)
+            num_not_lex_neighbours = len(word_not_lex_neighbours)
+
+            if b_ij == 'degree':
+                b_ij = 1/num_lex_neighbours
+
+            if c_ij == 'degree':
+                c_ij = 1/num_not_lex_neighbours
+
+            # FIXE use not_lex_neighbours
+            #no lex_neighbours, pass - use data estimate
+            if num_lex_neighbours == 0 and num_not_lex_neighbours == 0:
+                continue
+            # the weight of the data estimate if the number of lex_neighbours
+            model.wv.syn0[i] = num_lex_neighbours * a_i * initial_model.wv.syn0[i]
+
+            # loop over lex_neighbours and add to new vector
+            # for pp_word in word_lex_neighbours:
+            #     j = model.wv.vocab[pp_word].index
+            #     model.wv.syn0[i] += b_ij * model.wv.syn0[j]
+
+            # Vectorized version of the above
+            word_lex_neighbours = [model.wv.vocab[w].index for w in word_lex_neighbours]
+            model.wv.syn0[i] = model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_lex_neighbours], axis=0)
+            word_not_lex_neighbours = [model.wv.vocab[w].index for w in word_not_lex_neighbours]
+            model.wv.syn0[i] = model.wv.syn0[i] - c_ij * np.sum(model.wv.syn0[word_not_lex_neighbours], axis=0)
+            model.wv.syn0[i] = model.wv.syn0[i] / (num_lex_neighbours * (b_ij + a_i))
+
+            for (neighbour, _) in model.most_similar(word, topn=topn):
+                i = model.wv.vocab[neighbour].index
+                model.wv.syn0[i] = d * num_lex_neighbours * a_i * initial_model.wv.syn0[i]
+                model.wv.syn0[i] = d * (model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_lex_neighbours], axis=0))
+
+    return model
+
 
 
 def get_gnews():
@@ -580,9 +665,9 @@ QID = ID du mot
         sample_size = min(sample_size, len(list(lexicon)))
 
     if normalize_word:
-        model_vocab = [w_norm(w) for w in model.vocab]
+        model_vocab = [w_norm(w) for w in model.wv.vocab]
     else:
-        model_vocab = list(model.vocab)
+        model_vocab = list(model.wv.vocab)
 
     lexicon_index = list(enumerate([word for word
                                     in random.sample(list(lexicon),
@@ -610,7 +695,7 @@ QID = ID du mot
 
     for qid, word in lexicon_index:
         seen_docno = {}
-        word_in_vocab = list(model.vocab)[model_vocab.index(word)]
+        word_in_vocab = list(model.wv.vocab)[model_vocab.index(word)]
         for (rank, (docno, sim)) in enumerate(model.most_similar(word_in_vocab,
                                                                  topn=topn)):
             if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
@@ -685,9 +770,9 @@ QID = ID du mot
         sample_size = min(sample_size, len(list(lexicon)))
 
     if normalize_word:
-        model_vocab = [w_norm(w) for w in model.vocab]
+        model_vocab = [w_norm(w) for w in model.wv.vocab]
     else:
-        model_vocab = list(model.vocab)
+        model_vocab = list(model.wv.vocab)
 
     lexicon_index = list(enumerate([word for word
                                     in random.sample(list(lexicon),
@@ -715,7 +800,7 @@ QID = ID du mot
 
     for qid, word in lexicon_index:
         seen_docno = {}
-        word_in_vocab = list(model.vocab)[model_vocab.index(word)]
+        word_in_vocab = list(model.wv.vocab)[model_vocab.index(word)]
         for (rank, (docno, sim)) in enumerate(model.most_similar(word_in_vocab,
                                                                  topn=topn)):
             if docno == '' or docno in seen_docno or not re.match(r'^[a-z]+$', docno):
