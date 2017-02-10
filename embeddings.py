@@ -516,11 +516,11 @@ Put same class closer and other classes away.
 
 def build_custom3_2(initial_model,
                     lexicon_name,
-                    a_i=1, b_ij=1, c_ij=1,
+                    a_i=1, b_ij=1,
                     n_iter=10, in_place=True,
                     d=1, topn=50):
     """Derived from faruqui:2014:NIPS-DLRLW method.
-Put same class closer and other classes away.
+Put same class closer.
 
 Also moves the topn neighboors by d x <the actual translation>
 
@@ -555,26 +555,14 @@ Also moves the topn neighboors by d x <the actual translation>
 
             word_model_neighbours = model.most_similar(word, topn=topn)
 
-            # Non-lex_neighbours are words with different classes than WORD
-            word_not_lex_neighbours = []
-            for c in lexicon_inv:
-                if c != lexicon[word]:
-                    word_not_lex_neighbours.extend(lexicon_inv[c])
-            # Remove duplicate
-            word_not_lex_neighbours = list(set(word_not_lex_neighbours))
-
             num_lex_neighbours = len(word_lex_neighbours)
-            num_not_lex_neighbours = len(word_not_lex_neighbours)
 
             if b_ij == 'degree':
                 b_ij = 1/num_lex_neighbours
 
-            if c_ij == 'degree':
-                c_ij = 1/num_not_lex_neighbours
-
             # FIXE use not_lex_neighbours
             #no lex_neighbours, pass - use data estimate
-            if num_lex_neighbours == 0 and num_not_lex_neighbours == 0:
+            if num_lex_neighbours == 0:
                 continue
             # the weight of the data estimate if the number of lex_neighbours
             model.wv.syn0[i] = num_lex_neighbours * a_i * initial_model.wv.syn0[i]
@@ -587,8 +575,6 @@ Also moves the topn neighboors by d x <the actual translation>
             # Vectorized version of the above
             word_lex_neighbours = [model.wv.vocab[w].index for w in word_lex_neighbours]
             model.wv.syn0[i] = model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_lex_neighbours], axis=0)
-            word_not_lex_neighbours = [model.wv.vocab[w].index for w in word_not_lex_neighbours]
-            model.wv.syn0[i] = model.wv.syn0[i] - c_ij * np.sum(model.wv.syn0[word_not_lex_neighbours], axis=0)
             model.wv.syn0[i] = model.wv.syn0[i] / (num_lex_neighbours * (b_ij + a_i))
 
             for (neighbour, _) in word_model_neighbours:
