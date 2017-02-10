@@ -23,7 +23,7 @@ nrc_emotion_lexicon = reader.read_nrc_emotion(res.nrc_emotion_lexicon_path)
 nrc_emotions_lexicon = reader.read_nrc_emotions(res.nrc_emotion_lexicon_path)
 mpqa_lexicon = reader.read_mpqa(res.mpqa_lexicon_path)
 lexicons = [('bing_liu', bing_liu_lexicon),
-            ('nrc_polarity', nrc_emotion_lexicon),
+            ('nrc_emotion', nrc_emotion_lexicon),
             ('nrc_emotions', nrc_emotions_lexicon),
             ('mpqa', mpqa_lexicon)]
 
