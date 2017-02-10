@@ -97,7 +97,7 @@ logger.info('Processing %s', model_name)
 for lex_train_name, lex_train in lexicons:
     logger.info('Training %s with %s', model_name, lex_train_name)
     model = emb.get_custom0(train_path=train_path)
-    model = emb.build_custom3_1(model, lexicon=lex_train)
+    model = emb.build_custom3_1(model, lexicon_name=lex_train_name)
     for lex_test_name, lex_test in lexicons:
         # Skip test lexicon if it's the same as the training lexicon
         if lex_test_name == lex_train_name:
@@ -111,7 +111,7 @@ logger.info('Processing %s', model_name)
 for lex_train_name, lex_train in lexicons:
     logger.info('Training %s with %s', model_name, lex_train_name)
     model = emb.get_custom0(train_path=train_path)
-    model = emb.build_custom3_2(model, lexicon=lex_train, d=1)
+    model = emb.build_custom3_2(model, lexicon_name=lex_train_name, d=1)
     for lex_test_name, lex_test in lexicons:
         # Skip test lexicon if it's the same as the training lexicon
         if lex_test_name == lex_train_name:
@@ -125,7 +125,7 @@ logger.info('Processing %s', model_name)
 for lex_train_name, lex_train in lexicons:
     logger.info('Training %s with %s', model_name, lex_train_name)
     model = emb.get_custom0(train_path=train_path)
-    model = emb.build_custom3_2(model, lexicon=lex_train, d=0.1)
+    model = emb.build_custom3_2(model, lexicon_name=lex_train_name, d=0.1)
     for lex_test_name, lex_test in lexicons:
         # Skip test lexicon if it's the same as the training lexicon
         if lex_test_name == lex_train_name:

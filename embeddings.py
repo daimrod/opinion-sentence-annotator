@@ -445,7 +445,7 @@ def build_custom3(initial_model,
 
 
 def build_custom3_1(initial_model,
-                    lexicon={},
+                    lexicon_name,
                     a_i=1, b_ij=1, c_ij=1, n_iter=10, in_place=True):
     """Derived from faruqui:2014:NIPS-DLRLW method.
 Put same class closer and other classes away.
@@ -462,11 +462,10 @@ Put same class closer and other classes away.
         os.remove(initial_model_file.name)
     else:
         model = initial_model
-    old_lexicon = lexicon
     lexicon = {}
-    for w in old_lexicon:
+    for (w, v) in lexicons.get_lexicon(lexicon_name).items():
         if w in model:
-            lexicon[w] = old_lexicon[w]
+            lexicon[w] = v
     lexicon_inv = utils.invert_dict_nonunique(lexicon)
 
     for it in range(n_iter):
