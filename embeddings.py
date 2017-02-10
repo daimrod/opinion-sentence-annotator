@@ -553,6 +553,8 @@ Also moves the topn neighboors by d x <the actual translation>
             word_lex_neighbours = [w for w in lexicon_inv[lexicon[word]]
                                if w != word]
 
+            word_model_neighbours = model.most_similar(word, topn=topn)
+
             # Non-lex_neighbours are words with different classes than WORD
             word_not_lex_neighbours = []
             for c in lexicon_inv:
@@ -589,7 +591,7 @@ Also moves the topn neighboors by d x <the actual translation>
             model.wv.syn0[i] = model.wv.syn0[i] - c_ij * np.sum(model.wv.syn0[word_not_lex_neighbours], axis=0)
             model.wv.syn0[i] = model.wv.syn0[i] / (num_lex_neighbours * (b_ij + a_i))
 
-            for (neighbour, _) in model.most_similar(word, topn=topn):
+            for (neighbour, _) in word_model_neighbours:
                 i = model.wv.vocab[neighbour].index
                 model.wv.syn0[i] = d * num_lex_neighbours * a_i * initial_model.wv.syn0[i]
                 model.wv.syn0[i] = d * (model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_lex_neighbours], axis=0))
