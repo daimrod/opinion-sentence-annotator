@@ -646,7 +646,7 @@ class CNNRouvier2016_custom3_1(CNNRouvier2016):
         self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.build_custom3_1(model0,
-                                             lexicon=self.lexicon)
+                                             lexicon_name=self.lexicon_name)
 CNNRegister['Rouvier2016_custom3_1'] = CNNRouvier2016_custom3_1
 
 
