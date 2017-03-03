@@ -161,10 +161,9 @@ get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
 
 def build_custom1(train_path,
                   word2vec_param=default_word2vec_param,
-                  lexicon=None):
-    if lexicon is None:
-        raise ValueError('Empty lexicon')
+                  lexicon_name=''):
     logger.info('Train custom1 model')
+    lexicon = lexicons.get_lexicon(lexicon_name)
     source = TwitterLoggerTextReader(train_path)
     source = GenericTextReader(source)
     source = Splitter(source)
@@ -187,7 +186,7 @@ def get_custom2():
 
 def build_custom2(train_path,
                   word2vec_param=default_word2vec_param,
-                  lexicon=None, valid_num=0.1, top=10,
+                  lexicon_name='', valid_num=0.1, top=10,
                   clean_after=True):
     """Build a Word2Vec model using SWE method (optimization with
 inequalities).
@@ -197,8 +196,7 @@ inequalities).
         valid_num: How much inequations should be used for cross-validation (either a floar between 0 and 1 or an integer.
         top: See feat.build_ineq_for_model
         clean_after: Clean the files after building the model if True."""
-    if lexicon is None:
-        raise ValueError('Empty lexicon')
+    lexicon = lexicons.get_lexicon(lexicon_name)
     model = None
     source = TwitterLoggerTextReader(train_path)
     source = GenericTextReader(source, lower=True)
@@ -289,7 +287,7 @@ inequalities).
 
 def build_custom_mce(train_path,
                      word2vec_param=default_word2vec_param,
-                     lexicon=None, valid_num=0.1, top=10,
+                     lexicon_name='', valid_num=0.1, top=10,
                      clean_after=True):
     """Build a Word2Vec model using MCE method.
 
@@ -298,8 +296,7 @@ def build_custom_mce(train_path,
         valid_num: How much inequations should be used for cross-validation (either a floar between 0 and 1 or an integer.
         top: See feat.build_ineq_for_model
         clean_after: Clean the files after building the model if True."""
-    if lexicon is None:
-        raise ValueError('Empty lexicon')
+    lexicon = lexicons.get_lexicon(lexicon_name)
 
     source = TwitterLoggerTextReader(train_path)
     source = GenericTextReader(source, lower=True)
@@ -390,12 +387,14 @@ def old_get_custom3():
 
 
 def build_custom3(initial_model,
-                  lexicon={},
+                  lexicon_name='',
                   a_i=0.5, b_ij=0.5, n_iter=10, in_place=True):
     """Retrofit a model using faruqui:2014:NIPS-DLRLW method.
 
     Args:
         in_place: Modify the given model instead of copying it if True."""
+    old_lexicon = lexicons.get_lexicon(lexicon_name)
+
     if not in_place:
         initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
                                                          encoding='utf-8',
@@ -406,7 +405,6 @@ def build_custom3(initial_model,
         os.remove(initial_model_file.name)
     else:
         model = initial_model
-    old_lexicon = lexicon
     lexicon = {}
     for w in old_lexicon:
         if w in model:

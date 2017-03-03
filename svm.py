@@ -466,7 +466,7 @@ class Custom1(Word2VecBase):
         super().load_resources()
         self.bing_liu_lexicon = read_bing_liu(res.bing_liu_lexicon_path)
         self.word2vec = emb.get_custom1(word2vec_param=self.word2vec_param,
-                                        lexicon=self.bing_liu_lexicon)
+                                        lexicon_name='bing_liu')
 SVMRegister['Custom1'] = Custom1
 
 

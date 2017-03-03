@@ -443,9 +443,8 @@ class CNNChengGuo_Custom1(CNNChengGuo):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
-        self.embedding = emb.get_custom1(lexicon=self.lexicon,
-                                         suffix='bing_liu')
+        self.embedding = emb.get_custom1(lexicon_name=self.lexicon_name,
+                                         suffix=self.lexicon_name)
 CNNRegister['CG_custom1'] = CNNChengGuo_Custom1
 
 
@@ -453,10 +452,9 @@ class CNNChengGuo_Custom3(CNNChengGuo):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.get_custom3(model0,
-                                         lexicon=self.lexicon,
+                                         lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['CG_custom3'] = CNNChengGuo_Custom3
 
@@ -521,8 +519,7 @@ class CNNRouvierBaseline_custom1(CNNRouvierBaseline):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
-        self.embedding = emb.get_custom1(lexicon=self.lexicon,
+        self.embedding = emb.get_custom1(lexicon_name=self.lexicon_name,
                                          suffix=self.lexicon_name)
 CNNRegister['Rouvier_base_custom1'] = CNNRouvierBaseline_custom1
 
@@ -531,10 +528,9 @@ class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.get_custom3(model0,
-                                         lexicon=self.lexicon,
+                                         lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['Rouvier_base_custom3'] = CNNRouvierBaseline_custom3
 
@@ -614,8 +610,7 @@ class CNNRouvier2016_custom1(CNNRouvier2016):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
-        self.embedding = emb.get_custom1(lexicon=self.lexicon,
+        self.embedding = emb.get_custom1(lexicon_name=self.lexicon_name,
                                          suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom1'] = CNNRouvier2016_custom1
 
@@ -624,8 +619,7 @@ class CNNRouvier2016_custom_mce(CNNRouvier2016):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
-        self.embedding = emb.get_custom_mce(lexicon=self.lexicon,
+        self.embedding = emb.get_custom_mce(lexicon_name=self.lexicon_name,
                                             suffix=self.lexicon_name)
 CNNRegister['Rouvier2016_custom_mce'] = CNNRouvier2016_custom_mce
 
@@ -634,10 +628,9 @@ class CNNRouvier2016_custom3(CNNRouvier2016):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.get_custom3(model0,
-                                         lexicon=self.lexicon,
+                                         lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
 
@@ -646,7 +639,6 @@ class CNNRouvier2016_custom3_1(CNNRouvier2016):
     def __init__(self, lexicon_name='', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
-        self.lexicon = lexicons.get_lexicon(self.lexicon_name)
         model0 = emb.get_custom0()
         self.embedding = emb.get_custom3_1(model0,
                                            lexicon_name=self.lexicon_name,
