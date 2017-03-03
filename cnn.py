@@ -39,6 +39,7 @@ import numpy as np
 
 CNNRegister = {}
 
+
 # FIXME
 def fmeasure(y_true, y_pred):
     """Computes the f-measure, the harmonic mean of precision and recall."""
