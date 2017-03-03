@@ -442,6 +442,7 @@ def build_custom3(initial_model,
             model.wv.syn0[i] = model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_neighbours], axis=0)
             model.wv.syn0[i] = model.wv.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
+get_custom3 = make_get_model(build_custom3, '.word2vec.custom3')
 
 
 def build_custom3_1(initial_model,
@@ -513,6 +514,8 @@ Put same class closer and other classes away.
             model.wv.syn0[i] = model.wv.syn0[i] - c_ij * np.sum(model.wv.syn0[word_not_neighbours], axis=0)
             model.wv.syn0[i] = model.wv.syn0[i] / (num_neighbours * (b_ij + a_i))
     return model
+get_custom3_1 = make_get_model(build_custom3, '.word2vec.custom3_1')
+
 
 def build_custom3_2(initial_model,
                     lexicon_name,
@@ -583,7 +586,7 @@ Also moves the topn neighboors by d x <the actual translation>
                 model.wv.syn0[i] = d * (model.wv.syn0[i] + b_ij * np.sum(model.wv.syn0[word_lex_neighbours], axis=0))
 
     return model
-
+get_custom3_2 = make_get_model(build_custom3, '.word2vec.custom3_2')
 
 
 def get_gnews():
