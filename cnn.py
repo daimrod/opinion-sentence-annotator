@@ -39,7 +39,7 @@ import numpy as np
 
 CNNRegister = {}
 
-
+# FIXME
 def fmeasure(y_true, y_pred):
     """Computes the f-measure, the harmonic mean of precision and recall."""
     to_keep = y_pred[2] == 0
@@ -165,7 +165,7 @@ class CNNBase(FullPipeline):
                  max_nb_words=20000,
                  embedding_dim=100,
                  embedding_trainable=False,
-                 metrics=['acc', fmeasure],
+                 metrics=['acc', 'fmeasure'],
                  monitor='val_fmeasure',
                  mode='auto',
                  best_model_path='best_model',
