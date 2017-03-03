@@ -320,21 +320,14 @@ class CNNBase(FullPipeline):
                                                mode=self.mode)
             if self.best_score is None:
                 self.best_score = model_checkpoint.best
-            for attempt in range(10):
-                try:
-                    self.hist = self.model.fit(self.train_data, [self.labels] * len(self.preds),
-                                                  validation_data=(self.dev_data,
-                                                                   self.dev_labels),
-                                                  nb_epoch=self.nb_epoch,
-                                                  batch_size=self.batch_size,
-                                                  verbose=1,
-                                                  callbacks=[model_checkpoint],
-                                                  shuffle=self.shuffle)
-                except Exception as ex:
-                    logger.error('Failed at attempt %d' % attempt, ex)
-                    time.sleep(10)
-                else:
-                    break
+            self.hist = self.model.fit(self.train_data, [self.labels] * len(self.preds),
+                                       validation_data=(self.dev_data,
+                                                        self.dev_labels),
+                                       nb_epoch=self.nb_epoch,
+                                       batch_size=self.batch_size,
+                                       verbose=1,
+                                       callbacks=[model_checkpoint],
+                                       shuffle=self.shuffle)
             if self.test_between_try:
                 # Try with the current best model on test
                 tmp = self.best_model_path
