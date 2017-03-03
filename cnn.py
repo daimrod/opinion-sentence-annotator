@@ -453,7 +453,7 @@ class CNNChengGuo_Custom3(CNNChengGuo):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         model0 = emb.get_custom0()
-        self.embedding = emb.get_custom3(model0,
+        self.embedding = emb.get_custom3(initial_model=model0,
                                          lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['CG_custom3'] = CNNChengGuo_Custom3
@@ -529,7 +529,7 @@ class CNNRouvierBaseline_custom3(CNNRouvierBaseline):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         model0 = emb.get_custom0()
-        self.embedding = emb.get_custom3(model0,
+        self.embedding = emb.get_custom3(initial_model=model0,
                                          lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['Rouvier_base_custom3'] = CNNRouvierBaseline_custom3
@@ -629,7 +629,7 @@ class CNNRouvier2016_custom3(CNNRouvier2016):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         model0 = emb.get_custom0()
-        self.embedding = emb.get_custom3(model0,
+        self.embedding = emb.get_custom3(initial_model=model0,
                                          lexicon_name=self.lexicon_name,
                                          suffix='model0_' + self.lexicon_name)
 CNNRegister['Rouvier2016_custom3'] = CNNRouvier2016_custom3
@@ -640,7 +640,7 @@ class CNNRouvier2016_custom3_1(CNNRouvier2016):
         super().__init__(*args, **kwargs)
         self.lexicon_name = lexicon_name
         model0 = emb.get_custom0()
-        self.embedding = emb.get_custom3_1(model0,
+        self.embedding = emb.get_custom3_1(initial_model=model0,
                                            lexicon_name=self.lexicon_name,
                                            suffix='model0_' + self.lexicon_name)
 CNNRegister['Rouvier2016_custom3_1'] = CNNRouvier2016_custom3_1

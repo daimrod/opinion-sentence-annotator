@@ -140,7 +140,7 @@ def make_get_model(build_function, name):
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
-            model = build_function(train_path, word2vec_param=word2vec_param, **kwargs)
+            model = build_function(train_path=train_path, word2vec_param=word2vec_param, **kwargs)
             model.init_sims(replace=True)
             model.save(saved_model_path)
         return model
@@ -386,13 +386,16 @@ def old_get_custom3():
         raise ValueError
 
 
-def build_custom3(initial_model,
+def build_custom3(initial_model=None,
                   lexicon_name='',
                   a_i=0.5, b_ij=0.5, n_iter=10, in_place=True, **kwargs):
     """Retrofit a model using faruqui:2014:NIPS-DLRLW method.
 
     Args:
         in_place: Modify the given model instead of copying it if True."""
+    if initial_model is None:
+        raise ValueError('Need an initial model')
+
     old_lexicon = lexicons.get_lexicon(lexicon_name)
 
     if not in_place:
@@ -443,14 +446,17 @@ def build_custom3(initial_model,
 get_custom3 = make_get_model(build_custom3, '.word2vec.custom3')
 
 
-def build_custom3_1(initial_model,
-                    lexicon_name,
+def build_custom3_1(initial_model=None,
+                    lexicon_name='',
                     a_i=1, b_ij=1, c_ij=1, n_iter=10, in_place=True, **kwargs):
     """Derived from faruqui:2014:NIPS-DLRLW method.
 Put same class closer and other classes away.
 
     Args:
         in_place: Modify the given model instead of copying it if True."""
+    if initial_model is None:
+        raise ValueError('Need an initial model')
+
     if not in_place:
         initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
                                                          encoding='utf-8',
@@ -515,8 +521,8 @@ Put same class closer and other classes away.
 get_custom3_1 = make_get_model(build_custom3, '.word2vec.custom3_1')
 
 
-def build_custom3_2(initial_model,
-                    lexicon_name,
+def build_custom3_2(initial_model=None,
+                    lexicon_name='',
                     a_i=1, b_ij=1,
                     n_iter=10, in_place=True,
                     d=1, topn=50, **kwargs):
@@ -528,6 +534,9 @@ Also moves the topn neighboors by d x <the actual translation>
     Args:
         in_place: Modify the given model instead of copying it if True."""
     logger.info('Customize 3_2 with %s', lexicon_name)
+    if initial_model is None:
+        raise ValueError('Need an initial model')
+
     if not in_place:
         initial_model_file = tempfile.NamedTemporaryFile(mode='w+',
                                                          encoding='utf-8',
