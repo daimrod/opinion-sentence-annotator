@@ -288,9 +288,9 @@ inequalities).
 
 
 def build_custom_mce(train_path,
-                  word2vec_param=default_word2vec_param,
-                  lexicon=None, valid_num=0.1, top=10,
-                  clean_after=True):
+                     word2vec_param=default_word2vec_param,
+                     lexicon=None, valid_num=0.1, top=10,
+                     clean_after=True):
     """Build a Word2Vec model using MCE method.
 
     Args:
