@@ -147,7 +147,7 @@ def make_get_model(build_function, name):
     return helper
 
 
-def build_custom0(train_path, word2vec_param=default_word2vec_param):
+def build_custom0(train_path, word2vec_param=default_word2vec_param, **kwargs):
     """Build a Word2Vec model without any information.
 
     This is the 0 method, that is the baseline method."""
@@ -161,7 +161,7 @@ get_custom0 = make_get_model(build_custom0, '.word2vec.custom0')
 
 def build_custom1(train_path,
                   word2vec_param=default_word2vec_param,
-                  lexicon_name=''):
+                  lexicon_name='', **kwargs):
     logger.info('Train custom1 model')
     lexicon = lexicons.get_lexicon(lexicon_name)
     source = TwitterLoggerTextReader(train_path)
@@ -187,7 +187,7 @@ def get_custom2():
 def build_custom2(train_path,
                   word2vec_param=default_word2vec_param,
                   lexicon_name='', valid_num=0.1, top=10,
-                  clean_after=True):
+                  clean_after=True, **kwargs):
     """Build a Word2Vec model using SWE method (optimization with
 inequalities).
 
@@ -288,7 +288,7 @@ inequalities).
 def build_custom_mce(train_path,
                      word2vec_param=default_word2vec_param,
                      lexicon_name='', valid_num=0.1, top=10,
-                     clean_after=True):
+                     clean_after=True, **kwargs):
     """Build a Word2Vec model using MCE method.
 
     Args:
@@ -388,7 +388,7 @@ def old_get_custom3():
 
 def build_custom3(initial_model,
                   lexicon_name='',
-                  a_i=0.5, b_ij=0.5, n_iter=10, in_place=True):
+                  a_i=0.5, b_ij=0.5, n_iter=10, in_place=True, **kwargs):
     """Retrofit a model using faruqui:2014:NIPS-DLRLW method.
 
     Args:
@@ -445,7 +445,7 @@ get_custom3 = make_get_model(build_custom3, '.word2vec.custom3')
 
 def build_custom3_1(initial_model,
                     lexicon_name,
-                    a_i=1, b_ij=1, c_ij=1, n_iter=10, in_place=True):
+                    a_i=1, b_ij=1, c_ij=1, n_iter=10, in_place=True, **kwargs):
     """Derived from faruqui:2014:NIPS-DLRLW method.
 Put same class closer and other classes away.
 
@@ -519,7 +519,7 @@ def build_custom3_2(initial_model,
                     lexicon_name,
                     a_i=1, b_ij=1,
                     n_iter=10, in_place=True,
-                    d=1, topn=50):
+                    d=1, topn=50, **kwargs):
     """Derived from faruqui:2014:NIPS-DLRLW method.
 Put same class closer.
 
