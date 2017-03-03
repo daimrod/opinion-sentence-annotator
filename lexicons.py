@@ -22,6 +22,8 @@ def get_lexicon(lexicon_name):
     Returns:
         Returns the requested lexicon
     """
+    if lexicon_name not in _lexicons:
+        raise KeyError('The lexicon \'%s\' has not been registered' % lexicon_name)
     lexicon_reader, lexicon_path = _lexicons[lexicon_name]
     return lexicon_reader(lexicon_path)
 
