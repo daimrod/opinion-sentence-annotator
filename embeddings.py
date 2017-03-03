@@ -134,9 +134,9 @@ def make_get_model(build_function, name):
                force=False, suffix='',
                **kwargs):
         saved_model_path = '%s%s_size_%d_window_%d_%s' % (train_path, name,
-                                                        word2vec_param['size'],
-                                                        word2vec_param['window'],
-                                                        suffix)
+                                                          word2vec_param['size'],
+                                                          word2vec_param['window'],
+                                                          suffix)
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
