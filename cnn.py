@@ -336,7 +336,8 @@ class CNNBase(FullPipeline):
                 self.load_best_model()
                 self.run_test()
                 self.print_results()
-                self.best_model_path = tmp
+                if self.save_best_only:
+                    self.best_model_path = tmp
 
             # Test if the current (try) best model is the best of all time
             if self.best_score is None or model_checkpoint.monitor_op(model_checkpoint.best, self.best_score):
