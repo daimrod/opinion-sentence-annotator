@@ -56,6 +56,10 @@ SEMEVAL_SCORER_PATH = os.path.join(semeval16, 'Task4/SemEval2016_task4_submissio
 
 TREC_EVAL_PATH = os.path.expanduser('~/src/thesis/trec_eval.9.0/')
 
+questions_words_path = os.path.join(DATA_DIR, 'test_data/questions-words.txt')
+simlex999_path = os.path.join(DATA_DIR, 'test_data/simlex999.txt')
+wordsim353_path = os.path.join(DATA_DIR, 'test_data/wordsim353.tsv')
+
 ## Lexicons
 
 ### English lexicons
