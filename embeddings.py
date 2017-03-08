@@ -830,3 +830,28 @@ QID = ID du mot
 
     return ret
 
+
+def print_analogy_accuracy(model, questions_file):
+    acc = model.wv.accuracy(questions_file)
+
+    sem_correct = sum((len(acc[i]['correct']) for i in range(5)))
+    sem_total = sum((len(acc[i]['correct']) + len(acc[i]['incorrect']))
+                    for i in range(5))
+    sem_acc = 100*float(sem_correct)/sem_total
+    logger.info('\nSemantic: {:d}/{:d}, Accuracy: {:.2f}%'.format(sem_correct,
+                                                                  sem_total,
+                                                                  sem_acc))
+
+    syn_correct = sum((len(acc[i]['correct']) for i in range(5, len(acc)-1)))
+    syn_total = sum((len(acc[i]['correct']) + len(acc[i]['incorrect']))
+                    for i in range(5, len(acc)-1))
+    syn_acc = 100*float(syn_correct)/syn_total
+    logger.info('Syntactic: {:d}/{:d}, Accuracy: {:.2f}%\n'.format(syn_correct,
+                                                                   syn_total,
+                                                                   syn_acc))
+
+
+def print_similarity_accuracy(model, similarity_file):
+    acc = model.wv.evaluate_word_pairs(similarity_file)
+    logger.info('Pearson correlation coefficient: {:.2f}'.format(acc[0][0]))
+    logger.info('Spearman rank correlation coefficient: {:.2f}'.format(acc[1][0]))
