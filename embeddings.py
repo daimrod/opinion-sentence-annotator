@@ -138,8 +138,10 @@ def make_get_model(build_function, name):
                                                           word2vec_param['window'],
                                                           suffix)
         if not force and os.path.exists(saved_model_path) and os.path.getmtime(saved_model_path) > os.path.getmtime(train_path):
+            logger.info('Loading model %s', saved_model_path)
             model = gensim.models.Word2Vec.load(saved_model_path)
         else:
+            logger.info('Couldn\'t find model %s saved_model_path, building it...')
             model = build_function(train_path=train_path, word2vec_param=word2vec_param, **kwargs)
             model.init_sims(replace=True)
             model.save(saved_model_path)
